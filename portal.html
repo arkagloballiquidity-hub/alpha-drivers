@@ -186,7 +186,7 @@ tr:last-child td{border-bottom:none}
     </button>
   </nav>
   <div class="sb-foot">
-    <a href="index.html" class="sb-back">
+    <a href="/" class="sb-back">
       <svg viewBox="0 0 16 16" fill="none" width="12" height="12"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Volver al sitio
     </a>
@@ -516,7 +516,7 @@ tr:last-child td{border-bottom:none}
 <script>
 // ── SESSION ───────────────────────────────────────────────────
 (function(){
-  if(localStorage.getItem('ad_role')!=='member') location.replace('login.html?role=member');
+  if(localStorage.getItem('ad_role')!=='member') location.replace('/login?role=member');
 })();
 
 // ── DATA HELPERS ──────────────────────────────────────────────
@@ -928,7 +928,7 @@ function closeOverlay(e,id){if(e.target===document.getElementById(id))closeModal
 function logout(){
   localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');
   localStorage.removeItem('ad_session');localStorage.removeItem('ad_member_id');
-  location.href='login.html';
+  location.href='/login';
 }
 
 // ── INIT ──────────────────────────────────────────────────────

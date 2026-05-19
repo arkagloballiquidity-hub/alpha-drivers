@@ -134,7 +134,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     </button>
   </nav>
   <div class="sb-foot">
-    <a href="index.html" class="sb-back">
+    <a href="/" class="sb-back">
       <svg viewBox="0 0 16 16" fill="none" width="12" height="12"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Volver al sitio
     </a>
@@ -287,7 +287,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
       </div>
       <button style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.35);background:none;border:none;cursor:pointer;padding:0;margin-bottom:18px;transition:color .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.35)'" onclick="autoGenCreds()">↻ Generar automáticamente</button>
       <div style="background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.18);padding:14px 16px;font-size:11px;color:rgba(255,255,255,.45);line-height:1.7">
-        El miembro podrá iniciar sesión en <strong style="color:var(--green)">login.html</strong> con estas credenciales para acceder a su portal personal.
+        El miembro podrá iniciar sesión en <strong style="color:var(--green)">alphadrivers.com/login</strong> con estas credenciales para acceder a su portal personal.
       </div>
     </div>
     <div class="modal-foot">
@@ -359,10 +359,10 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
 <script>
 // ── AUTH ──────────────────────────────────────────────────────
 (function(){
-  if(localStorage.getItem('ad_role')!=='admin'){location.replace('login.html');}
+  if(localStorage.getItem('ad_role')!=='admin'){location.replace('/login');}
   document.getElementById('sbUser').textContent='Admin: '+localStorage.getItem('ad_user');
 })();
-function logout(){localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');localStorage.removeItem('ad_session');location.href='login.html';}
+function logout(){localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');localStorage.removeItem('ad_session');location.href='/login';}
 
 // ── SEED DATA ─────────────────────────────────────────────────
 const SEED_MEMBERS=[
