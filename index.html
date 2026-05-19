@@ -318,7 +318,10 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
 
   /* Scrub → stacked panels (no video scrub on mobile) */
   #scrub{height:auto !important;overflow:visible !important}
-  #mvid,#vov,#scroll-hint,#sec-ind{display:none !important}
+  #scroll-hint,#sec-ind{display:none !important}
+  /* Video plays as background only for the hero panel */
+  #mvid{position:absolute;top:0;left:0;right:0;height:100svh;width:100%;object-fit:cover;object-position:center 12%;z-index:1}
+  #vov{position:absolute;top:0;left:0;right:0;height:100svh;z-index:2;background:rgba(0,0,0,.38)}
   .sp{
     position:relative !important;
     opacity:1 !important;
@@ -422,7 +425,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
 <div id="scrub">
 
   <!-- VIDEO BACKGROUND -->
-  <video id="mvid" muted playsinline preload="auto" aria-hidden="true">
+  <video id="mvid" muted playsinline autoplay loop preload="auto" aria-hidden="true">
     <source src="imagenes/hero-video.mp4" type="video/mp4">
   </video>
 
@@ -859,11 +862,17 @@ window.addEventListener('DOMContentLoaded', () => {
       } catch(e) {}
     }
 
-    /* --- MOBILE: show all panels, set counter --- */
+    /* --- MOBILE: show all panels, set counter, play video --- */
     if (isMobile) {
-      document.querySelectorAll('.sp').forEach(p => p.classList.add('live'));
+      document.querySelectorAll('.sp').forEach(p => {
+        p.classList.add('live');
+        p.style.zIndex = '10'; // above video overlay
+      });
       const ctrEl = document.getElementById('scrubCtr');
       if (ctrEl) ctrEl.textContent = '50';
+      // Ensure video plays (required on some iOS/Android)
+      const vid = document.getElementById('mvid');
+      if (vid) vid.play().catch(() => {});
     }
 
     /* --- PROGRESS BAR + NAV --- */
