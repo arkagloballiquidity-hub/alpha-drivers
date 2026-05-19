@@ -383,7 +383,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
     <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="width:150px;height:auto;object-fit:contain;vertical-align:middle"/>
   </a>
   <ul class="nls">
-    <li><a href="#form">Apply</a></li>
+    <li><a href="#" onclick="openInviteGate(event)">Apply</a></li>
   </ul>
   <div class="nav-right">
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">ES</button>
@@ -395,7 +395,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
       <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       <span class="bk-label">Mi Portal</span>
     </a>
-    <a href="#form" class="nb" data-i18n="nav.apply">Apply for Membership</a>
+    <a href="#" class="nb" data-i18n="nav.apply" onclick="openInviteGate(event)">Apply for Membership</a>
   </div>
 </nav>
 
@@ -438,8 +438,8 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
       <h1 class="sp-h1">Drive<br>Your<br>Legacy</h1>
       <p class="sp-sub" data-i18n="hero.sub">A private club built around precision,<br>performance, access and legacy.</p>
       <div class="sp-ctas">
-        <a href="#form" class="nb" data-i18n="nav.apply">Apply for Membership</a>
-        <a href="#p-manifesto" class="ob" data-i18n="hero.cta.explore">Explore the Club</a>
+        <a href="#" class="nb" data-i18n="nav.apply" onclick="openInviteGate(event)">Apply for Membership</a>
+        <a href="#" class="ob" data-i18n="hero.cta.explore" onclick="exploreClub(event)">Explore the Club</a>
       </div>
     </div>
     <div class="sp-stats">
@@ -584,7 +584,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
       <p class="sp-tag" data-i18n="cta.tag">Apply</p>
       <h2 class="sp-h1" data-i18n-html="cta.h2">Enter<br>the Grid</h2>
       <p class="sp-sub" style="text-align:center;margin:0 auto 32px" data-i18n="cta.sub">Submit your application. Applications are reviewed individually.</p>
-      <a href="#form" class="nb" data-i18n="cta.btn">Request Membership Access</a>
+      <a href="#" class="nb" data-i18n="cta.btn" onclick="openInviteGate(event)">Request Membership Access</a>
     </div>
   </div>
 
@@ -595,6 +595,22 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   <div class="tw">
     <span>Focus</span><span>·</span><span>Precision</span><span>·</span><span>Performance</span><span>·</span><span>Legacy</span><span>·</span><span>Alpha Drivers</span><span>·</span><span>Private by Design</span><span>·</span><span>Drive Your Legacy</span><span>·</span>
     <span>Focus</span><span>·</span><span>Precision</span><span>·</span><span>Performance</span><span>·</span><span>Legacy</span><span>·</span><span>Alpha Drivers</span><span>·</span><span>Private by Design</span><span>·</span><span>Drive Your Legacy</span><span>·</span>
+  </div>
+</div>
+
+<!-- INVITE CODE MODAL -->
+<div id="inviteOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:none;align-items:center;justify-content:center;padding:24px">
+  <div style="background:#111;border:1px solid rgba(255,255,255,.1);width:100%;max-width:420px;padding:44px 40px">
+    <p style="font-size:9px;letter-spacing:.36em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:20px">Acceso Privado</p>
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.12em;color:#fff;margin-bottom:8px" id="inviteTitle">Código de Invitación</h2>
+    <p style="font-size:12px;color:rgba(255,255,255,.38);line-height:1.7;margin-bottom:28px" id="inviteDesc">La membresía es solo por invitación. Ingresa el código que recibiste de un miembro o del equipo Alpha Drivers.</p>
+    <div id="inviteErr" style="display:none;font-size:11px;color:#e63946;background:rgba(230,57,70,.08);border:1px solid rgba(230,57,70,.2);padding:10px 14px;margin-bottom:16px;letter-spacing:.04em"></div>
+    <label style="display:block;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.36);margin-bottom:8px" id="inviteLabel">Código</label>
+    <input id="inviteCode" type="text" autocomplete="off" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:13px 16px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;letter-spacing:.12em;outline:none;text-transform:uppercase;margin-bottom:20px" placeholder="XXXX-XXXX"/>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeInviteGate()" style="flex:1;padding:13px;background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.12);font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.4)'">Cancelar</button>
+      <button onclick="validateInviteCode()" id="inviteBtn" style="flex:2;padding:13px;background:#fff;color:#000;border:none;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='#fff'">Continuar</button>
+    </div>
   </div>
 </div>
 
@@ -1027,6 +1043,11 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         if (!error) {
+          // Mark invite code as used
+          if (_inviteValidated?.id) {
+            await SB.from('invite_codes').update({ used: true, used_by: email }).eq('id', _inviteValidated.id);
+            _inviteValidated = null;
+          }
           btn.textContent = currentLang === 'en'
             ? "Application Received — We'll be in touch."
             : 'Solicitud Recibida — Nos pondremos en contacto.';
@@ -1041,6 +1062,71 @@ window.addEventListener('DOMContentLoaded', () => {
   } // end initPage
 
 }); // end DOMContentLoaded
+
+/* ── EXPLORE THE CLUB ────────────────────────────────────────── */
+function exploreClub(e) {
+  if (e) e.preventDefault();
+  // p-manifesto starts at inAt=0.16 of the 9×vh scrub
+  const target = 0.16 * 9 * window.innerHeight;
+  if (window.lenis) window.lenis.scrollTo(target, { duration: 1.8 });
+  else window.scrollTo({ top: target, behavior: 'smooth' });
+}
+
+/* ── INVITE CODE GATE ────────────────────────────────────────── */
+let _inviteValidated = null; // stores the valid code once verified
+
+function openInviteGate(e) {
+  if (e) e.preventDefault();
+  if (_inviteValidated) { scrollToForm(); return; }
+  const lang = typeof currentLang !== 'undefined' ? currentLang : 'es';
+  document.getElementById('inviteTitle').textContent = lang === 'en' ? 'Invite Code' : 'Código de Invitación';
+  document.getElementById('inviteDesc').textContent = lang === 'en'
+    ? 'Membership is by invitation only. Enter the code you received from a member or the Alpha Drivers team.'
+    : 'La membresía es solo por invitación. Ingresa el código que recibiste de un miembro o del equipo Alpha Drivers.';
+  document.getElementById('inviteLabel').textContent = lang === 'en' ? 'Code' : 'Código';
+  document.getElementById('inviteCode').value = '';
+  document.getElementById('inviteErr').style.display = 'none';
+  document.getElementById('inviteOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('inviteCode').focus(), 80);
+  document.getElementById('inviteCode').onkeydown = function(ev){ if(ev.key==='Enter') validateInviteCode(); };
+}
+
+function closeInviteGate() {
+  document.getElementById('inviteOverlay').style.display = 'none';
+}
+
+async function validateInviteCode() {
+  const code = document.getElementById('inviteCode').value.trim().toUpperCase();
+  const errEl = document.getElementById('inviteErr');
+  const btn = document.getElementById('inviteBtn');
+  const lang = typeof currentLang !== 'undefined' ? currentLang : 'es';
+  if (!code) { showInviteErr(lang === 'en' ? 'Enter your invite code' : 'Ingresa tu código'); return; }
+  btn.textContent = lang === 'en' ? 'Validating…' : 'Validando…';
+  btn.disabled = true;
+  const { data, error } = await SB.from('invite_codes').select('*').eq('code', code).eq('used', false).maybeSingle();
+  btn.textContent = lang === 'en' ? 'Continue' : 'Continuar';
+  btn.disabled = false;
+  if (!data || error) {
+    showInviteErr(lang === 'en' ? 'Invalid or already used code.' : 'Código inválido o ya utilizado.');
+    return;
+  }
+  _inviteValidated = data;
+  closeInviteGate();
+  scrollToForm();
+}
+
+function showInviteErr(msg) {
+  const el = document.getElementById('inviteErr');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function scrollToForm() {
+  const formEl = document.getElementById('form');
+  if (!formEl) return;
+  if (window.lenis) window.lenis.scrollTo(formEl, { duration: 1.2 });
+  else formEl.scrollIntoView({ behavior: 'smooth' });
+}
 </script>
 </body>
 </html>
