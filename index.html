@@ -993,13 +993,21 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Setup scrub once video metadata is ready
+    // Setup scrub once — guard prevents double-call from multiple callbacks
+    let _scrubDone = false;
+    const setupScrubOnce = () => { if (_scrubDone) return; _scrubDone = true; setupScrub(); };
+
     if (vid.readyState >= 1) {
-      setupScrub();
+      setupScrubOnce();
     } else {
-      vid.addEventListener('loadedmetadata', setupScrub, { once: true });
-      vid.addEventListener('loadeddata', setupScrub, { once: true });
-      setTimeout(setupScrub, 1000); // fallback
+      vid.addEventListener('loadedmetadata', setupScrubOnce, { once: true });
+      vid.addEventListener('loadeddata', setupScrubOnce, { once: true });
+      // Fallback: try every 200ms up to 6s, then give up (avoids double-call from timeout)
+      const fallbackId = setInterval(() => {
+        if (_scrubDone) { clearInterval(fallbackId); return; }
+        if (vid.readyState >= 1) { clearInterval(fallbackId); setupScrubOnce(); }
+      }, 200);
+      setTimeout(() => clearInterval(fallbackId), 6000);
     }
 
     /* --- MAGNETIC BUTTONS --- */
