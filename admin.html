@@ -289,7 +289,8 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     <div class="modal-hd"><div class="modal-title" id="mdTitle">Miembro</div><button class="modal-close" onclick="closeModal('modalMember')">×</button></div>
     <div class="modal-body" id="mdBody"></div>
     <div class="modal-foot">
-      <button class="btn-sm-out" style="color:var(--red);border-color:rgba(230,57,70,.3)" onclick="deleteMember()">Eliminar</button>
+      <button class="btn-sm-out" id="mdDeactivateBtn" style="color:var(--red);border-color:rgba(230,57,70,.3)" onclick="deactivateMember()">Desactivar</button>
+      <button class="btn-sm-out" id="mdReactivateBtn" style="display:none;color:var(--green);border-color:rgba(46,196,182,.3)" onclick="reactivateMember()">Reactivar</button>
       <button class="btn-sm" onclick="closeModal('modalMember')">Cerrar</button>
     </div>
   </div>
@@ -322,6 +323,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     <div class="modal-body" id="appBody"></div>
     <div class="modal-foot">
       <button class="btn-sm-out" style="color:var(--red);border-color:rgba(230,57,70,.3)" onclick="rejectApp()" id="appRejectBtn">Rechazar</button>
+      <button class="btn-sm-out" style="color:var(--red);border-color:rgba(230,57,70,.3);display:none" onclick="deleteApp()" id="appDeleteBtn">Eliminar</button>
       <button class="btn-sm-out" onclick="closeModal('modalApp')">Cerrar</button>
       <button class="btn-sm" onclick="approveApp()" id="appApproveBtn">Aprobar</button>
     </div>
@@ -513,7 +515,7 @@ function getLimites(){return _LIM;}
 // ── HELPERS ───────────────────────────────────────────────────
 function statusClass(s){
   if(s==='Activo'||s==='Aprobado') return 'st-active';
-  if(s==='Rechazado') return 'st-rejected';
+  if(s==='Rechazado'||s==='Inactivo') return 'st-rejected';
   if(s.includes('Pendiente')||s.includes('Docs')||s==='En revisión') return 'st-pending';
   return 'st-review';
 }
@@ -583,7 +585,8 @@ function renderView(name){
             ?`<span class="status st-active" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')" title="${mu.username}">Activo</span>`
             :`<span class="status st-rejected" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')">Inactivo</span>`)
         :`<button class="tbl-action" onclick="event.stopPropagation();openCreds('${m.id}')">+ Crear</button>`;
-      return `<tr class="clickable" onclick="openMember('${m.id}')">
+      const inactive=m.status==='Inactivo';
+      return `<tr class="clickable" onclick="openMember('${m.id}')" style="${inactive?'opacity:.4;':''}">
         <td>${m.id}</td><td>${m.name}</td><td>${m.city}</td><td>${m.vehicle}</td><td>${m.date}</td>
         <td><span class="status ${statusClass(m.status)}">${m.status}</span></td>
         <td>${portalBadge}</td>
@@ -721,6 +724,9 @@ function openMember(id){
            <button class="btn-sm" onclick="openCreds('${id}')">+ Crear Acceso</button>`
       }
     </div>`;
+  const isInactive=m.status==='Inactivo';
+  document.getElementById('mdDeactivateBtn').style.display=isInactive?'none':'';
+  document.getElementById('mdReactivateBtn').style.display=isInactive?'':'none';
   openModal('modalMember');
 }
 async function saveBenStart(id){
@@ -737,13 +743,26 @@ async function changeStatus(id,status){
   const m=_M.find(x=>x.id===id);if(m)m.status=status;
   toast('Estado actualizado: '+status);closeModal('modalMember');renderView('members');
 }
-async function deleteMember(){
+async function deactivateMember(){
   if(!currentMemberId)return;
-  if(!confirm('¿Eliminar este miembro permanentemente?'))return;
-  const {error}=await SB.from('members').delete().eq('id',currentMemberId);
-  if(error){alert('Error al eliminar');return;}
-  _M=_M.filter(m=>m.id!==currentMemberId);
-  toast('Miembro eliminado');closeModal('modalMember');renderView('members');
+  if(!confirm('¿Desactivar este miembro? Podrás reactivarlo en cualquier momento.'))return;
+  const {error}=await SB.from('members').update({status:'Inactivo'}).eq('id',currentMemberId);
+  if(error){alert('Error al desactivar');return;}
+  const m=_M.find(x=>x.id===currentMemberId);if(m)m.status='Inactivo';
+  // Also deactivate portal access
+  await SB.from('member_users').update({active:false}).eq('member_id',currentMemberId);
+  const mu=_MU.find(u=>u.member_id===currentMemberId);if(mu)mu.active=false;
+  toast('Miembro desactivado');closeModal('modalMember');renderView('members');
+}
+async function reactivateMember(){
+  if(!currentMemberId)return;
+  const {error}=await SB.from('members').update({status:'Activo'}).eq('id',currentMemberId);
+  if(error){alert('Error al reactivar');return;}
+  const m=_M.find(x=>x.id===currentMemberId);if(m)m.status='Activo';
+  // Also reactivate portal access
+  await SB.from('member_users').update({active:true}).eq('member_id',currentMemberId);
+  const mu=_MU.find(u=>u.member_id===currentMemberId);if(mu)mu.active=true;
+  toast('Miembro reactivado');closeModal('modalMember');renderView('members');
 }
 function openAddMember(){openModal('modalAdd');}
 async function saveMember(){
@@ -772,6 +791,7 @@ function openApp(id){
     <div class="md-item"><div class="md-lbl">Mensaje</div><div class="md-val" style="font-weight:300;line-height:1.6;font-size:12px;color:rgba(255,255,255,.6)">${a.msg}</div></div>`;
   document.getElementById('appRejectBtn').style.display=decided?'none':'';
   document.getElementById('appApproveBtn').style.display=decided?'none':'';
+  document.getElementById('appDeleteBtn').style.display=decided?'':'none';
   openModal('modalApp');
 }
 async function approveApp(){
@@ -794,6 +814,14 @@ async function rejectApp(){
   if(error){alert('Error: '+error.message);return;}
   a.status='Rechazado';
   toast('Solicitud rechazada');closeModal('modalApp');renderView('apps');
+}
+async function deleteApp(){
+  if(!currentAppId)return;
+  if(!confirm('¿Eliminar esta solicitud permanentemente?'))return;
+  const {error}=await SB.from('applications').delete().eq('id',currentAppId);
+  if(error){alert('Error al eliminar');return;}
+  _A=_A.filter(a=>a.id!==currentAppId);
+  toast('Solicitud eliminada');closeModal('modalApp');renderView('apps');
 }
 
 // ── BENEFIT REQUESTS ──────────────────────────────────────────
