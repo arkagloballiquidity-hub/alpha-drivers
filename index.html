@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 /* ====================== BASE ====================== */
 :root{
@@ -310,17 +311,58 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   .sp-club-wrap,.sp-ben-wrap,.sp-exp-wrap,.sp-tier-wrap{grid-template-columns:1fr;gap:32px}
 }
 @media(max-width:768px){
-  nav{padding:18px 24px}.nls,.nb{display:none}.bk-btn span{display:none}
-  .sp{padding:80px 6% 60px}
-  .sp-stats{right:24px}
+  /* Nav */
+  nav{padding:18px 20px}
+  .nls,.nb{display:none}
+  .bk-label{display:none}
+
+  /* Scrub → stacked panels (no video scrub on mobile) */
+  #scrub{height:auto !important;overflow:visible !important}
+  #mvid,#vov,#scroll-hint,#sec-ind{display:none !important}
+  .sp{
+    position:relative !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+    min-height:100svh;
+    padding:88px 6% 56px;
+    inset:auto !important
+  }
+  #p-hero{display:flex;flex-direction:column}
+
+  /* Hero stats: pull out of absolute, show below */
+  .sp-stats{
+    position:static !important;
+    display:flex;flex-direction:row;flex-wrap:wrap;
+    margin-top:28px;border-top:1px solid rgba(255,255,255,.07);gap:0
+  }
+  .sp-si{
+    flex:1;min-width:80px;text-align:left;
+    padding:12px 10px 12px 0;
+    border-bottom:none;
+    border-right:1px solid rgba(255,255,255,.07)
+  }
+  .sp-si:last-child{border-right:none}
+  .sp-sv{font-size:30px}
+  .sp-sl{font-size:10px;letter-spacing:.12em}
+
+  /* Grid layouts */
+  .sp-club-wrap,.sp-ben-wrap,.sp-exp-wrap,.sp-tier-wrap{grid-template-columns:1fr;gap:28px}
   .sp-cards{grid-template-columns:1fr}
   .sp-bens{grid-template-columns:1fr 1fr}
-  .car-duo{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
-  .car-img{height:100%}
-  #sec-ind{display:none}
-  #form{padding:80px 24px}
-  .gform{padding:36px 24px}.fg{grid-template-columns:1fr}
-  footer{padding:60px 24px 40px}
+  .car-duo{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .car-img{height:52vw;min-height:180px}
+
+  /* Centering for counter panel */
+  .sp-ctr-wrap{justify-content:center}
+  .sp-ctr{font-size:clamp(80px,22vw,140px)}
+
+  /* Form */
+  #form{padding:80px 20px}
+  .gform{padding:32px 20px}
+  .fg{grid-template-columns:1fr}
+
+  /* Footer */
+  footer{padding:56px 20px 40px}
 }
 /* LANG TOGGLE */
 .lang-btn{
@@ -361,13 +403,13 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   </ul>
   <div class="nav-right">
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">ES</button>
-    <a href="login.html?role=admin" class="bk-btn bk-admin" title="Admin Backoffice">
+    <a href="/login" class="bk-btn bk-admin" title="Admin Backoffice">
       <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
-      Admin
+      <span class="bk-label">Admin</span>
     </a>
-    <a href="login.html?role=member" class="bk-btn bk-member" title="Member Portal">
+    <a href="/login" class="bk-btn bk-member" title="Member Portal">
       <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      Mi Portal
+      <span class="bk-label">Mi Portal</span>
     </a>
     <a href="#form" class="nb" data-i18n="nav.apply">Apply for Membership</a>
   </div>
@@ -586,7 +628,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
         <div class="fgg"><label class="fgl" for="ci" data-i18n="form.ci.label">City</label><input class="fgi" type="text" id="ci" data-i18n-ph="form.ci.ph" placeholder="Mexico City"/></div>
         <div class="fgg full"><label class="fgl" for="ve" data-i18n="form.ve.label">Current Vehicle / Interest</label><input class="fgi" type="text" id="ve" data-i18n-ph="form.ve.ph" placeholder="e.g. Porsche 911, track days…"/></div>
         <div class="fgg full"><label class="fgl" for="mb" data-i18n="form.mb.label">Membership Category</label>
-          <select class="fgs" id="mb" required><option value="" disabled selected data-i18n="form.mb.opt">Select a category</option><option value="premium" data-i18n="form.mb.val1">Alpha Premium — $1,000,000 MXN</option></select>
+          <select class="fgs" id="mb" required><option value="" disabled selected data-i18n="form.mb.opt">Select a category</option><option value="premium" data-i18n="form.mb.val1">Alpha Premium</option></select>
         </div>
         <div class="fgg full"><label class="fgl" for="wy" data-i18n="form.wy.label">Why do you want to join ALPHA DRIVERS?</label><textarea class="fga" id="wy" data-i18n-ph="form.wy.ph" placeholder="Tell us about yourself and what drives you…"></textarea></div>
       </div>
@@ -614,6 +656,11 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
    ALPHA DRIVERS — Video Scrubbing Experience
    Todo el contenido sincronizado frame-por-frame con el video
    ============================================================ */
+
+const SB = supabase.createClient(
+  'https://fggchwkbvelqiofkojqn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
+);
 
 /* ============================================================
    I18N — Bilingual EN / ES
@@ -667,7 +714,7 @@ const LANGS = {
     'form.ph.label':'Phone','form.ci.label':'City','form.ci.ph':'Mexico City',
     'form.ve.label':'Current Vehicle / Interest','form.ve.ph':'e.g. Porsche 911, track days…',
     'form.mb.label':'Membership Category','form.mb.opt':'Select a category',
-    'form.mb.val1':'Alpha Premium — $1,000,000 MXN',
+    'form.mb.val1':'Alpha Premium',
     'form.wy.label':'Why do you want to join ALPHA DRIVERS?',
     'form.wy.ph':'Tell us about yourself and what drives you…',
     'form.submit':'Submit Application',
@@ -722,7 +769,7 @@ const LANGS = {
     'form.ph.label':'Teléfono','form.ci.label':'Ciudad','form.ci.ph':'Ciudad de México',
     'form.ve.label':'Vehículo Actual / Interés','form.ve.ph':'ej. Porsche 911, días de pista…',
     'form.mb.label':'Categoría de Membresía','form.mb.opt':'Selecciona una categoría',
-    'form.mb.val1':'Alpha Premium — $1,000,000 MXN',
+    'form.mb.val1':'Alpha Premium',
     'form.wy.label':'¿Por qué quieres unirte a ALPHA DRIVERS?',
     'form.wy.ph':'Cuéntanos sobre ti y qué te impulsa…',
     'form.submit':'Enviar Solicitud',
@@ -793,21 +840,31 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   function initPage() {
+    const isMobile = window.matchMedia('(max-width:768px)').matches;
 
     /* --- GSAP + ScrollTrigger --- */
     gsap.registerPlugin(ScrollTrigger);
 
-    /* --- LENIS smooth scroll --- */
+    /* --- LENIS smooth scroll (desktop only) --- */
     let lenis = null;
-    try {
-      if (typeof Lenis !== 'undefined') {
-        lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
-        window.__lenis = lenis; // expose for debugging
-        lenis.on('scroll', ScrollTrigger.update);
-        gsap.ticker.add(t => lenis.raf(t * 1000));
-        gsap.ticker.lagSmoothing(0);
-      }
-    } catch(e) {}
+    if (!isMobile) {
+      try {
+        if (typeof Lenis !== 'undefined') {
+          lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+          window.__lenis = lenis;
+          lenis.on('scroll', ScrollTrigger.update);
+          gsap.ticker.add(t => lenis.raf(t * 1000));
+          gsap.ticker.lagSmoothing(0);
+        }
+      } catch(e) {}
+    }
+
+    /* --- MOBILE: show all panels, set counter --- */
+    if (isMobile) {
+      document.querySelectorAll('.sp').forEach(p => p.classList.add('live'));
+      const ctrEl = document.getElementById('scrubCtr');
+      if (ctrEl) ctrEl.textContent = '50';
+    }
 
     /* --- PROGRESS BAR + NAV --- */
     const prog = document.getElementById('prog');
@@ -865,6 +922,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const dots = document.querySelectorAll('.si-dot');
 
     const setupScrub = () => {
+      if (isMobile) return;
       const dur = vid.duration || 10;
 
       // MAIN TIMELINE pinned for 900% of viewport
@@ -964,14 +1022,41 @@ window.addEventListener('DOMContentLoaded', () => {
         scrollTrigger: { trigger: 'footer', start: 'top 85%' } }
     );
 
-    /* --- FORM SUBMIT --- */
+    /* --- FORM SUBMIT → Supabase --- */
     const applyForm = document.getElementById('applyForm');
     if (applyForm) {
-      applyForm.addEventListener('submit', e => {
+      applyForm.addEventListener('submit', async e => {
         e.preventDefault();
         const btn = document.getElementById('fBtn');
-        btn.textContent = "Application Received — We'll be in touch.";
+        const name    = document.getElementById('fn').value.trim();
+        const email   = document.getElementById('em').value.trim();
+        const phone   = document.getElementById('ph').value.trim();
+        const city    = document.getElementById('ci').value.trim();
+        const vehicle = document.getElementById('ve').value.trim();
+        const msg     = document.getElementById('wy').value.trim();
+
+        if (!name || !email) return;
+
         btn.disabled = true;
+        btn.textContent = currentLang === 'en' ? 'Sending…' : 'Enviando…';
+
+        const today = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
+        const { error } = await SB.from('applications').insert({
+          id: 'a' + Date.now(),
+          name, email, city, vehicle, msg,
+          date: today,
+          status: 'En revisión'
+        });
+
+        if (!error) {
+          btn.textContent = currentLang === 'en'
+            ? "Application Received — We'll be in touch."
+            : 'Solicitud Recibida — Nos pondremos en contacto.';
+          applyForm.reset();
+        } else {
+          btn.disabled = false;
+          btn.textContent = currentLang === 'en' ? 'Submit Application' : 'Enviar Solicitud';
+        }
       });
     }
 

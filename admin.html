@@ -129,6 +129,10 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
       <svg viewBox="0 0 20 20" fill="none"><path d="M3 17V8l7-5 7 5v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="11" width="6" height="6" rx=".5" stroke="currentColor" stroke-width="1.4"/></svg>
       Socios & Talleres
     </button>
+    <button class="sb-link" onclick="showView('staff',this)">
+      <svg viewBox="0 0 20 20" fill="none"><circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="14" cy="7" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 17c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M14 12c1.657 0 3 1.343 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Staff
+    </button>
     <button class="sb-link" onclick="showView('config',this)">
       <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M15.78 4.22l-1.42 1.42M5.64 14.36l-1.42 1.42" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Configuración
@@ -206,6 +210,15 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
       <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Categoría</th><th>Límite Crédito</th><th>Contacto</th><th></th></tr></thead><tbody id="sociosBody"></tbody></table></div>
     </div>
 
+    <!-- STAFF -->
+    <div class="view" id="view-staff">
+      <div class="sec-hd">
+        <div class="sec-title">Usuarios de Staff</div>
+        <button class="btn-sm" onclick="openAddStaff()">+ Agregar Usuario</button>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody id="staffBody"></tbody></table></div>
+    </div>
+
     <!-- CONFIG -->
     <div class="view" id="view-config">
       <div class="cfg-grid">
@@ -222,6 +235,14 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
           <div id="roadTourList" style="margin-bottom:16px"></div>
           <button class="btn-sm" onclick="openAddRoadTour()">+ Agregar Fecha</button>
         </div>
+      </div>
+      <!-- Concierge full-width -->
+      <div class="cfg-card" style="margin-top:0">
+        <div class="cfg-card-title">Contacto Concierge</div>
+        <div class="cfg-row"><span class="cfg-lbl">Email</span><input class="cfg-input" id="cfgCEmail" type="email" style="width:220px" placeholder="concierge@alphadrivers.mx"/></div>
+        <div class="cfg-row"><span class="cfg-lbl">WhatsApp</span><input class="cfg-input" id="cfgCWhatsapp" style="width:220px" placeholder="+52 55 0000 0000"/></div>
+        <div class="cfg-row"><span class="cfg-lbl">Horario de Atención</span><input class="cfg-input" id="cfgCHorario" style="width:220px" placeholder="Lun–Vie · 9am–8pm"/></div>
+        <div style="margin-top:20px"><button class="btn-sm" onclick="saveConcierge()">Guardar Concierge</button></div>
       </div>
     </div>
 
@@ -355,6 +376,28 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
   </div>
 </div>
 
+<!-- MODAL: STAFF USER -->
+<div class="overlay" id="modalStaff">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="staffModalTitle">Agregar Staff</div><button class="modal-close" onclick="closeModal('modalStaff')">×</button></div>
+    <div class="modal-body">
+      <div class="mfield"><label>Nombre Completo</label><input id="stName" placeholder="Nombre completo"/></div>
+      <div class="mfield"><label>Usuario (para iniciar sesión)</label><input id="stUsername" placeholder="usuario.apellido" autocomplete="off"/></div>
+      <div class="mfield"><label>Contraseña</label><input id="stPassword" type="text" placeholder="Mínimo 6 caracteres" autocomplete="off"/></div>
+      <div class="mfield"><label>Rol</label>
+        <select id="stRole">
+          <option value="admin">Admin — Acceso completo</option>
+          <option value="concierge">Concierge — Acceso limitado</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm-out" onclick="closeModal('modalStaff')">Cancelar</button>
+      <button class="btn-sm" onclick="saveStaff()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -366,16 +409,19 @@ const SB=supabase.createClient(
 
 // ── AUTH ──────────────────────────────────────────────────────
 (function(){
-  if(localStorage.getItem('ad_role')!=='admin'){location.replace('/login');}
-  document.getElementById('sbUser').textContent='Admin: '+localStorage.getItem('ad_user');
+  const role=localStorage.getItem('ad_role');
+  if(role!=='admin'&&role!=='concierge'){location.replace('/login');}
+  document.getElementById('sbUser').textContent=(role==='concierge'?'Concierge: ':'Admin: ')+localStorage.getItem('ad_user');
 })();
 function logout(){localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');localStorage.removeItem('ad_session');location.href='/login';}
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
-let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_LIM={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}};
+let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_STAFF=[],
+    _LIM={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},
+    _CC={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
 
 async function loadAll(){
-  const [m,mu,a,s,rt,br,lim]=await Promise.all([
+  const [m,mu,a,s,rt,br,lim,cc,staff]=await Promise.all([
     SB.from('members').select('*').order('created_at'),
     SB.from('member_users').select('*'),
     SB.from('applications').select('*').order('created_at',{ascending:false}),
@@ -383,9 +429,12 @@ async function loadAll(){
     SB.from('road_tours').select('*'),
     SB.from('benefit_requests').select('*').order('created_at',{ascending:false}),
     SB.from('config_limites').select('*'),
+    SB.from('config_concierge').select('*'),
+    SB.from('admin_users').select('*').order('created_at'),
   ]);
-  _M=m.data||[];_MU=mu.data||[];_A=a.data||[];_S=s.data||[];_RT=rt.data||[];_BR=br.data||[];
+  _M=m.data||[];_MU=mu.data||[];_A=a.data||[];_S=s.data||[];_RT=rt.data||[];_BR=br.data||[];_STAFF=staff.data||[];
   if(lim.data?.length){_LIM={};lim.data.forEach(l=>{_LIM[l.nivel]={efectivo:Number(l.efectivo),servicio:Number(l.servicio)};});}
+  if(cc.data?.length){cc.data.forEach(r=>{_CC[r.key]=r.value;});}
 }
 
 function getMembers(){return _M;}
@@ -422,7 +471,8 @@ const VIEW_META={
   apps:['Solicitudes Membresía','Aplicaciones de ingreso pendientes'],
   'ben-reqs':['Solicitudes AD','Beneficios solicitados por miembros'],
   socios:['Socios & Talleres','Red de negocios asociados al crédito de servicio'],
-  config:['Configuración','Límites de beneficios y fechas Road Tour'],
+  staff:['Staff','Gestión de usuarios administradores y concierge'],
+  config:['Configuración','Límites de beneficios, concierge y fechas Road Tour'],
 };
 function showView(name,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -497,11 +547,29 @@ function renderView(name){
         </td>
       </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin socios</td></tr>';
   }
+  if(name==='staff'){
+    document.getElementById('staffBody').innerHTML=_STAFF.length?_STAFF.map(u=>`
+      <tr>
+        <td>${u.name}</td>
+        <td style="font-family:monospace;font-size:11px;color:rgba(255,255,255,.7)">${u.username}</td>
+        <td><span class="status ${u.role==='admin'?'st-active':'st-review'}" style="text-transform:uppercase">${u.role}</span></td>
+        <td><span class="status ${u.active!==false?'st-active':'st-rejected'}">${u.active!==false?'Activo':'Inactivo'}</span></td>
+        <td style="white-space:nowrap">
+          <button class="tbl-action" onclick="toggleStaffActive('${u.id}')">${u.active!==false?'Desactivar':'Activar'}</button>
+          <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
+          <button class="tbl-action" style="color:var(--red)" onclick="deleteStaff('${u.id}')">Eliminar</button>
+        </td>
+      </tr>`).join('')
+      :'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin usuarios de staff registrados</td></tr>';
+  }
   if(name==='config'){
     document.getElementById('cfgP1').value=_LIM['Alpha Premium']?.efectivo??150000;
     document.getElementById('cfgP2').value=_LIM['Alpha Premium']?.servicio??50000;
     document.getElementById('cfgA1').value=_LIM['Alpha']?.efectivo??100000;
     document.getElementById('cfgA2').value=_LIM['Alpha']?.servicio??30000;
+    document.getElementById('cfgCEmail').value=_CC.email||'';
+    document.getElementById('cfgCWhatsapp').value=_CC.whatsapp||'';
+    document.getElementById('cfgCHorario').value=_CC.horario||'';
     renderRoadTours();
   }
 }
@@ -719,6 +787,32 @@ async function saveCreds(){
     if(error){alert('Error: '+error.message);return;}
     _MU.push(d);
   }
+  // Send welcome email via Resend
+  const m=_M.find(x=>x.id===credsMemberId);
+  if(m?.email){
+    fetch('/api/send-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        to:m.email,
+        subject:'Bienvenido a ALPHA DRIVERS — Tu acceso al portal',
+        html:`<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body style="font-family:Inter,Arial,sans-serif;background:#000;color:#fff;padding:48px 24px;max-width:520px;margin:0 auto">
+<p style="font-size:28px;font-weight:700;letter-spacing:5px;margin:0 0 4px">ALPHA DRIVERS</p>
+<p style="font-size:9px;letter-spacing:6px;color:rgba(255,255,255,.38);margin:0 0 48px;text-transform:uppercase">Drive Your Legacy</p>
+<p style="font-size:20px;font-weight:600;margin:0 0 14px">Bienvenido al club, ${m.name.split(' ')[0]}.</p>
+<p style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.85;margin:0 0 32px">Tu acceso al portal de miembros ha sido activado. Ingresa con las siguientes credenciales:</p>
+<div style="background:#111;border:1px solid rgba(255,255,255,.1);padding:28px 32px;margin-bottom:36px">
+  <p style="font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.38);margin:0 0 6px;text-transform:uppercase">Usuario</p>
+  <p style="font-size:20px;font-weight:600;margin:0 0 22px;font-family:monospace">${username}</p>
+  <p style="font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.38);margin:0 0 6px;text-transform:uppercase">Contraseña</p>
+  <p style="font-size:20px;font-weight:600;margin:0;font-family:monospace">${password}</p>
+</div>
+<a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:16px 36px;text-decoration:none">Acceder al Portal →</a>
+<p style="margin-top:48px;font-size:11px;color:rgba(255,255,255,.25);line-height:1.7">ALPHA DRIVERS · Club Privado de Membresía Deportiva · México<br>Por favor no respondas a este correo.</p>
+</body></html>`
+      })
+    }).catch(()=>{}); // fail silently — don't block UX
+  }
   closeModal('modalCreds');toast('Acceso guardado — usuario: '+username);
   openMember(credsMemberId);renderView('members');
 }
@@ -833,6 +927,70 @@ async function deleteRoadTour(id){
   if(error){alert('Error: '+error.message);return;}
   _RT=_RT.filter(t=>t.id!==id);
   toast('Fecha eliminada');renderRoadTours();
+}
+
+// ── CONCIERGE CONFIG ──────────────────────────────────────────
+async function saveConcierge(){
+  const rows=[
+    {key:'email',value:document.getElementById('cfgCEmail').value.trim()},
+    {key:'whatsapp',value:document.getElementById('cfgCWhatsapp').value.trim()},
+    {key:'horario',value:document.getElementById('cfgCHorario').value.trim()},
+  ];
+  const {error}=await SB.from('config_concierge').upsert(rows,{onConflict:'key'});
+  if(error){alert('Error al guardar: '+error.message);return;}
+  rows.forEach(r=>{_CC[r.key]=r.value;});
+  toast('Datos de concierge actualizados');
+}
+
+// ── STAFF CRUD ────────────────────────────────────────────────
+let editStaffId=null;
+function openAddStaff(){
+  editStaffId=null;
+  document.getElementById('staffModalTitle').textContent='Agregar Staff';
+  ['stName','stUsername','stPassword'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('stRole').value='concierge';
+  openModal('modalStaff');
+}
+async function saveStaff(){
+  const name=document.getElementById('stName').value.trim();
+  const username=document.getElementById('stUsername').value.trim().toLowerCase().replace(/\s/g,'');
+  const password=document.getElementById('stPassword').value.trim();
+  const role=document.getElementById('stRole').value;
+  if(!name||!username){alert('Nombre y usuario son requeridos');return;}
+  if(password.length<6){alert('La contraseña debe tener al menos 6 caracteres');return;}
+  const dup=_STAFF.find(u=>u.username===username&&u.id!==editStaffId);
+  if(dup){alert('Ese usuario ya existe');return;}
+  const data={name,username,role,active:true};
+  if(password) data.password=password;
+  if(editStaffId){
+    const {error}=await SB.from('admin_users').update(data).eq('id',editStaffId);
+    if(error){alert('Error: '+error.message);return;}
+    const idx=_STAFF.findIndex(u=>u.id===editStaffId);
+    if(idx>=0)_STAFF[idx]={..._STAFF[idx],...data};
+    toast('Usuario actualizado');
+  } else {
+    const {data:d,error}=await SB.from('admin_users').insert(data).select().single();
+    if(error){alert('Error: '+error.message);return;}
+    _STAFF.push(d);
+    toast('Usuario de staff creado');
+  }
+  editStaffId=null;closeModal('modalStaff');renderView('staff');
+}
+async function toggleStaffActive(id){
+  const u=_STAFF.find(x=>x.id===id);if(!u)return;
+  const newActive=!u.active;
+  const {error}=await SB.from('admin_users').update({active:newActive}).eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  u.active=newActive;
+  toast(newActive?'Usuario activado':'Usuario desactivado');
+  renderView('staff');
+}
+async function deleteStaff(id){
+  if(!confirm('¿Eliminar este usuario de staff?'))return;
+  const {error}=await SB.from('admin_users').delete().eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  _STAFF=_STAFF.filter(u=>u.id!==id);
+  toast('Usuario eliminado');renderView('staff');
 }
 
 // ── LIMITS ────────────────────────────────────────────────────

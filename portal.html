@@ -321,9 +321,9 @@ tr:last-child td{border-bottom:none}
         <div style="font-family:var(--h);font-size:28px;letter-spacing:.1em;color:#fff;margin-bottom:8px">Tu concierge personal</div>
         <div style="font-size:12px;color:rgba(255,255,255,.38);letter-spacing:.04em;line-height:1.7;margin-bottom:32px">Como miembro Alpha Drivers tienes acceso a un concierge personal disponible para gestionar experiencias, solicitudes y cualquier apoyo relacionado con tu membresía.</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
-          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Correo</div><div style="font-size:12px;color:#fff">concierge@alphadrivers.mx</div></div>
-          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">WhatsApp</div><div style="font-size:12px;color:#fff">+52 55 0000 0000</div></div>
-          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Horario</div><div style="font-size:12px;color:#fff">Lun–Vie · 9am–8pm</div></div>
+          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Correo</div><div style="font-size:12px;color:#fff" id="ccEmail">—</div></div>
+          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">WhatsApp</div><div style="font-size:12px;color:#fff" id="ccWhatsapp">—</div></div>
+          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Horario</div><div style="font-size:12px;color:#fff" id="ccHorario">—</div></div>
         </div>
         <div style="margin-bottom:20px">
           <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.36);margin-bottom:8px">Tipo de solicitud</div>
@@ -528,21 +528,27 @@ const _MEMBER_ID=localStorage.getItem('ad_member_id');
 })();
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
-let _member=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[];
+let _member=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[],
+    _cc={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
 
 async function loadAll(){
-  const [memberRes,sociosRes,rtRes,limRes,reqsRes]=await Promise.all([
+  const [memberRes,sociosRes,rtRes,limRes,reqsRes,ccRes]=await Promise.all([
     SB.from('members').select('*').eq('id',_MEMBER_ID).single(),
     SB.from('socios').select('*').order('nombre'),
     SB.from('road_tours').select('*'),
     SB.from('config_limites').select('*'),
     SB.from('benefit_requests').select('*').eq('member_id',_MEMBER_ID).order('created_at',{ascending:false}),
+    SB.from('config_concierge').select('*'),
   ]);
   _member=memberRes.data;
   _socios=sociosRes.data||[];
   _roadTours=rtRes.data||[];
   if(limRes.data?.length){_limites={};limRes.data.forEach(l=>{_limites[l.nivel]={efectivo:Number(l.efectivo),servicio:Number(l.servicio)};});}
   _myReqs=reqsRes.data||[];
+  if(ccRes.data?.length){ccRes.data.forEach(r=>{_cc[r.key]=r.value;});}
+  // Populate concierge contact UI
+  const eEl=document.getElementById('ccEmail');const wEl=document.getElementById('ccWhatsapp');const hEl=document.getElementById('ccHorario');
+  if(eEl)eEl.textContent=_cc.email;if(wEl)wEl.textContent=_cc.whatsapp;if(hEl)hEl.textContent=_cc.horario;
 }
 
 function getMember(){return _member||{id:'001',name:'Miembro Alpha',nivel:'Alpha Premium',status:'Activo',date:'Enero 2025',city:'',vehicle:'',email:''};}

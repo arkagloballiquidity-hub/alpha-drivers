@@ -105,8 +105,26 @@ async function doLogin() {
     return;
   }
 
-  // Member credentials from Supabase
   btn.classList.add('loading'); btn.disabled = true;
+
+  // Check staff users (admin_users table)
+  const { data: su } = await SB
+    .from('admin_users')
+    .select('*')
+    .eq('username', user)
+    .eq('password', pass)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (su) {
+    localStorage.setItem('ad_role', su.role);
+    localStorage.setItem('ad_user', su.username);
+    localStorage.setItem('ad_session', Date.now());
+    setTimeout(() => { location.href = '/admin'; }, 700);
+    return;
+  }
+
+  // Check member credentials
   const { data: mu, error } = await SB
     .from('member_users')
     .select('*')
