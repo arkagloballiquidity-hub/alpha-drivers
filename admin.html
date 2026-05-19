@@ -518,7 +518,7 @@ let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_STAFF=[],_PAGOS=[],_DOCS=[],_ICODES=
     _LIM={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},
     _CC={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'},
     _REQ_DOCS=[],_CFG_GENERAL={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
-    _EPHOTOS=[],_BEN_TYPES=[],_BEN_LIMITS=[],_MEMBER_DOCS={};
+    _EPHOTOS=[],_BEN_TYPES=[],_BEN_LIMITS=[],_MEMBER_DOCS={},_MEMBER_BENS={};
 
 async function loadAll(){
   const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes,rdocs,cgen,ephotos,benTypes,benLims]=await Promise.all([
@@ -779,6 +779,18 @@ function openMember(id){
       }
     </div>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Beneficios Personalizados</div>
+      <p style="font-size:10px;color:rgba(255,255,255,.28);line-height:1.6;margin-bottom:10px">Beneficios exclusivos para este miembro, adicionales a los de su nivel.</p>
+      <div id="mdMemberBens" style="margin-bottom:10px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input type="text" id="mdBenName" placeholder="Nombre (ej: Track Day)" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
+        <input type="text" id="mdBenDesc" placeholder="Descripción" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
+        <input type="number" id="mdBenMax" placeholder="Límite anual (MXN)" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
+        <input type="text" id="mdBenUnit" placeholder="Unidad (MXN, días...)" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
+      </div>
+      <button class="btn-sm" onclick="addMemberBenefit('${id}')">+ Agregar Beneficio</button>
+    </div>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Documentos Personalizados</div>
       <p style="font-size:10px;color:rgba(255,255,255,.28);line-height:1.6;margin-bottom:10px">Si asignas documentos aquí, este miembro verá solo estos en su portal (reemplaza la lista global).</p>
       <div id="mdMemberDocs" style="margin-bottom:10px"></div>
@@ -808,6 +820,7 @@ function openMember(id){
       </div>
     </div>`;
   renderMemberPhotos(id);
+  loadMemberBenefits(id);
   loadMemberReqDocs(id);
   const isInactive=m.status==='Inactivo';
   document.getElementById('mdDeactivateBtn').style.display=isInactive?'none':'';
@@ -1594,6 +1607,47 @@ async function saveBenTypeLimits(btId){
     if(idx>=0)_BEN_LIMITS[idx]=u;else _BEN_LIMITS.push(u);
   });
   toast('Límites guardados');
+}
+
+// ── MEMBER BENEFITS ───────────────────────────────────────────
+async function loadMemberBenefits(memberId){
+  const {data}=await SB.from('member_benefits').select('*').eq('member_id',memberId).eq('activo',true);
+  _MEMBER_BENS[memberId]=data||[];
+  renderMemberBens(memberId);
+}
+function renderMemberBens(memberId){
+  const el=document.getElementById('mdMemberBens');if(!el)return;
+  const bens=_MEMBER_BENS[memberId]||[];
+  if(!bens.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:8px">Sin beneficios personalizados</div>';return;}
+  el.innerHTML=bens.map(b=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+    <div style="flex:1">
+      <div style="font-size:11px;color:#fff;font-weight:500">${b.name} <span style="font-weight:400;color:rgba(255,255,255,.5)">· ${fmtMXN(b.max_amount)} ${b.unit||'MXN'}</span></div>
+      ${b.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35)">${b.descripcion}</div>`:''}
+    </div>
+    <button onclick="deleteMemberBenefit('${b.id}','${memberId}')" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+  </div>`).join('');
+}
+async function addMemberBenefit(memberId){
+  const name=(document.getElementById('mdBenName').value||'').trim();
+  if(!name){toast('Escribe el nombre del beneficio');return;}
+  const desc=document.getElementById('mdBenDesc').value.trim();
+  const max_amount=Number(document.getElementById('mdBenMax').value)||0;
+  const unit=document.getElementById('mdBenUnit').value.trim()||'MXN';
+  const id='mb'+Date.now();
+  const {data,error}=await SB.from('member_benefits').insert({id,member_id:memberId,name,descripcion:desc,unit,max_amount,activo:true}).select().single();
+  if(error){alert('Error: '+error.message);return;}
+  if(!_MEMBER_BENS[memberId])_MEMBER_BENS[memberId]=[];
+  _MEMBER_BENS[memberId].push(data);
+  ['mdBenName','mdBenDesc','mdBenMax','mdBenUnit'].forEach(i=>document.getElementById(i).value='');
+  renderMemberBens(memberId);
+  toast('Beneficio "'+name+'" agregado');
+}
+async function deleteMemberBenefit(benId,memberId){
+  const {error}=await SB.from('member_benefits').delete().eq('id',benId);
+  if(error){alert('Error: '+error.message);return;}
+  if(_MEMBER_BENS[memberId])_MEMBER_BENS[memberId]=_MEMBER_BENS[memberId].filter(b=>b.id!==benId);
+  renderMemberBens(memberId);
+  toast('Beneficio eliminado');
 }
 
 // ── MEMBER REQUIRED DOCS ──────────────────────────────────────

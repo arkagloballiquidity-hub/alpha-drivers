@@ -718,12 +718,12 @@ const _MEMBER_ID=localStorage.getItem('ad_member_id');
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
 let _member=null,_memberUser=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[],
     _myDocs=[],_myPayments=[],_myReferrals=[],_reqDocs=[],_cfgGeneral={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
-    _myPhotos=[],_memberReqDocs=[],_benTypes=[],_benLimits=[],
+    _myPhotos=[],_memberReqDocs=[],_benTypes=[],_benLimits=[],_memberBens=[],
     _cc={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
 
 async function loadAll(){
   const adUser=localStorage.getItem('ad_user');
-  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes,rdocsRes,cgenRes,photosRes,mrdRes,benTypesRes,benLimsRes]=await Promise.all([
+  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes,rdocsRes,cgenRes,photosRes,mrdRes,benTypesRes,benLimsRes,memberBensRes]=await Promise.all([
     SB.from('members').select('*').eq('id',_MEMBER_ID).single(),
     SB.from('member_users').select('*').eq('member_id',_MEMBER_ID).maybeSingle(),
     SB.from('socios').select('*').order('nombre'),
@@ -740,6 +740,7 @@ async function loadAll(){
     SB.from('member_required_docs').select('*').eq('member_id',_MEMBER_ID).eq('activo',true).order('orden'),
     SB.from('config_benefit_types').select('*').eq('activo',true).order('orden'),
     SB.from('config_benefit_limits').select('*'),
+    SB.from('member_benefits').select('*').eq('member_id',_MEMBER_ID).eq('activo',true),
   ]);
   _member=memberRes.data;
   _memberUser=muRes.data||null;
@@ -755,6 +756,7 @@ async function loadAll(){
   _memberReqDocs=mrdRes.data||[];
   _benTypes=benTypesRes.data||[];
   _benLimits=benLimsRes.data||[];
+  _memberBens=memberBensRes.data||[];
   if(cgenRes.data?.length){cgenRes.data.forEach(r=>{_cfgGeneral[r.key]=r.value;});}
   if(ccRes.data?.length){ccRes.data.forEach(r=>{_cc[r.key]=r.value;});}
   const eEl=document.getElementById('ccEmail');const wEl=document.getElementById('ccWhatsapp');const hEl=document.getElementById('ccHorario');
@@ -824,6 +826,35 @@ function getBenData(){
     {id:'servicio',num:'03',title:'Crédito de Servicio',desc:'Crédito para usar en nuestra red de socios: talleres, detailing, aseguradores, restaurantes y más.',val:fmtMXN(svRest),unit:'MXN en red de socios',pct:Math.round(svUsado/lim.servicio*100),lbl1:fmtMXN(svUsado)+' utilizado',lbl2:fmtMXN(svRest)+' restante',tag:'En uso',modal:'modalServicio',limite:lim.servicio,usado:svUsado},
     {id:'eco',num:'04',title:'Ecosistema AD',desc:'Participación en el ecosistema Alpha Drivers. Recibes un porcentaje de los ingresos anuales del club como miembro fundador.',val:'5%',unit:'Participación anual compartida',pct:100,lbl1:'Activo',lbl2:'Confirmado',tag:'Confirmado',modal:'modalEcosistema'},
   ];
+  // Append per-member custom benefits
+  _memberBens.forEach(mb=>{
+    const usado=locked?0:_myReqs
+      .filter(r=>r.tipo===mb.name&&r.status!=='Rechazado'&&range&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye)
+      .reduce((s,r)=>s+(Number(r.monto)||0),0);
+    const maxAmt=Number(mb.max_amount||0);
+    const rest=Math.max(0,maxAmt-usado);
+    const pct=maxAmt?Math.round(usado/maxAmt*100):0;
+    bens.push({
+      id:'member_'+mb.id,
+      num:String(bens.length+1).padStart(2,'0'),
+      title:mb.name,
+      desc:mb.descripcion||mb.name,
+      val:fmtMXN(rest),
+      unit:(mb.unit||'MXN')+' disponibles',
+      pct,
+      lbl1:fmtMXN(usado)+' utilizado',
+      lbl2:fmtMXN(rest)+' restante',
+      tag:'Exclusivo',
+      modal:'modalBenGenerico',
+      _btId:'member_'+mb.id,
+      _btName:mb.name,
+      _btUnit:mb.unit||'MXN',
+      _isMemberBen:true,
+      _mbId:mb.id,
+      limite:maxAmt,
+      usado,
+    });
+  });
   // Append configurable benefit types
   _benTypes.forEach(bt=>{
     const btLim=_benLimits.find(l=>l.benefit_type_id===bt.id&&l.nivel===nivel);
@@ -1309,24 +1340,32 @@ let _activeBenType=null;
 function openBenModal(modalId,btId){
   // Custom configurable benefit type
   if(modalId==='modalBenGenerico'&&btId){
-    const bt=_benTypes.find(x=>x.id===btId);
-    if(!bt)return;
-    const m=getMember();
-    const nivel=m.nivel||'Alpha Premium';
-    const btLim=_benLimits.find(l=>l.benefit_type_id===btId&&l.nivel===nivel);
-    const maxAmt=Number(btLim?.max_amount||0);
+    // Resolve benefit data — could be global type or per-member benefit
+    let name,descripcion,unit,maxAmt;
     const range=getBenefitYearRange();
+    if(btId.startsWith('member_')){
+      const mbId=btId.replace('member_','');
+      const mb=_memberBens.find(x=>x.id===mbId);
+      if(!mb)return;
+      name=mb.name;descripcion=mb.descripcion||mb.name;unit=mb.unit||'MXN';maxAmt=Number(mb.max_amount||0);
+    } else {
+      const bt=_benTypes.find(x=>x.id===btId);
+      if(!bt)return;
+      const m=getMember();const nivel=m.nivel||'Alpha Premium';
+      const btLim=_benLimits.find(l=>l.benefit_type_id===btId&&l.nivel===nivel);
+      name=bt.name;descripcion=bt.descripcion||bt.name;unit=bt.unit||'MXN';maxAmt=Number(btLim?.max_amount||0);
+    }
     const usado=_myReqs
-      .filter(r=>r.tipo===bt.name&&r.status!=='Rechazado'&&range&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye)
+      .filter(r=>r.tipo===name&&r.status!=='Rechazado'&&range&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye)
       .reduce((s,r)=>s+(Number(r.monto)||0),0);
     const rest=Math.max(0,maxAmt-usado);
-    _activeBenType={id:bt.id,name:bt.name,unit:bt.unit||'MXN',limite:maxAmt,usado,rest};
-    document.getElementById('benGenTitle').textContent=bt.name;
-    document.getElementById('benGenDesc').textContent=bt.descripcion||bt.name;
+    _activeBenType={id:btId,name,unit,limite:maxAmt,usado,rest};
+    document.getElementById('benGenTitle').textContent=name;
+    document.getElementById('benGenDesc').textContent=descripcion||name;
     document.getElementById('benGenDisp').textContent=fmtMXN(rest);
     document.getElementById('benGenUsado').textContent=fmtMXN(usado);
-    document.getElementById('benGenMontoLbl').textContent='Monto a solicitar ('+(bt.unit||'MXN')+')';
-    document.getElementById('benGenHint').textContent='Disponible: '+fmtMXN(rest)+' '+(bt.unit||'MXN');
+    document.getElementById('benGenMontoLbl').textContent='Monto a solicitar ('+unit+')';
+    document.getElementById('benGenHint').textContent='Disponible: '+fmtMXN(rest)+' '+unit;
     document.getElementById('benGenMonto').dataset.max=rest;
     document.getElementById('benGenMonto').value='';
     document.getElementById('benGenNotas').value='';
