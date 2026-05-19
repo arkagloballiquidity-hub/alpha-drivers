@@ -319,10 +319,8 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   .sp-bens{grid-template-columns:repeat(2,1fr)}
   .sp-club-wrap,.sp-ben-wrap,.sp-exp-wrap,.sp-tier-wrap{grid-template-columns:1fr;gap:32px}
 }
-/* Mobile floating apply CTA */
 .mob-apply{display:none}
 @media(max-width:768px){
-  .mob-apply{display:flex;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:490;background:#fff;color:#000;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:14px 32px;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.5);transition:background .2s}
   /* Nav */
   nav{padding:8px 16px}
   .nl img{width:100px!important}
@@ -1176,15 +1174,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ── MOBILE / PWA: auto-show invite gate ───────────────────────
-(function() {
-  const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  if (isMobileDevice || isStandalone) {
-    // Delay slightly to let page paint first
-    setTimeout(() => openInviteGate(null), 600);
-  }
-})();
 </script>
 </body>
 </html>

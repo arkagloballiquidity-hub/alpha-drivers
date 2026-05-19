@@ -2,7 +2,7 @@
   "name": "ALPHA DRIVERS",
   "short_name": "Alpha Drivers",
   "description": "Club Privado de Membresía Deportiva",
-  "start_url": "/",
+  "start_url": "/login",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
