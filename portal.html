@@ -229,6 +229,24 @@ tr:last-child td{border-bottom:none}
 </head>
 <body>
 
+<!-- PWA INSTALL BANNER -->
+<div id="installBanner" style="display:none;position:fixed;bottom:66px;left:12px;right:12px;z-index:9000;background:#111;border:1px solid rgba(255,255,255,.12);padding:14px 16px;box-shadow:0 -4px 32px rgba(0,0,0,.6)">
+  <div style="display:flex;align-items:center;gap:12px">
+    <img src="/icon-192.png" style="width:42px;height:42px;border-radius:10px;flex-shrink:0"/>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.12em;color:#fff">ALPHA DRIVERS</div>
+      <div id="installBannerMsg" style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;line-height:1.4">Instala la app en tu dispositivo</div>
+    </div>
+    <button id="installBtn" onclick="triggerInstall()" style="background:#fff;color:#000;border:none;padding:9px 16px;font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex-shrink:0">Instalar</button>
+    <button onclick="dismissInstallBanner()" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:22px;line-height:1;padding:0 0 0 4px;flex-shrink:0">×</button>
+  </div>
+  <!-- iOS share hint arrow -->
+  <div id="iosHint" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:rgba(255,255,255,.4);align-items:center;gap:8px">
+    <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 3v12M8 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 13v6h14v-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Toca <strong style="color:rgba(255,255,255,.7)">Compartir</strong> → <strong style="color:rgba(255,255,255,.7)">"Agregar a inicio"</strong>
+  </div>
+</div>
+
 <!-- MOBILE BOTTOM NAV -->
 <nav class="mob-nav" id="mobNav">
   <button class="mob-nav-btn active" id="mnPanel" onclick="showView('panel',this);setMobActive('mnPanel')">
@@ -1752,9 +1770,52 @@ function logout(){
   location.href='/login';
 }
 
+// ── PWA INSTALL ───────────────────────────────────────────────
+let _deferredPrompt=null;
+const _isStandalone=()=>window.matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;
+const _isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
+const _isSafariBrowser=()=>/safari/i.test(navigator.userAgent)&&!/crios|fxios|chrome/i.test(navigator.userAgent);
+
+function showInstallBanner(){
+  if(_isStandalone()||localStorage.getItem('pwa_dismissed'))return;
+  const banner=document.getElementById('installBanner');
+  const btn=document.getElementById('installBtn');
+  const iosHint=document.getElementById('iosHint');
+  const msg=document.getElementById('installBannerMsg');
+  if(_isIOS()&&_isSafariBrowser()){
+    btn.style.display='none';
+    iosHint.style.display='flex';
+    msg.textContent='Agrega la app a tu pantalla de inicio';
+    banner.style.display='block';
+  } else if(_deferredPrompt){
+    banner.style.display='block';
+  }
+}
+function triggerInstall(){
+  if(!_deferredPrompt)return;
+  _deferredPrompt.prompt();
+  _deferredPrompt.userChoice.then(()=>{
+    _deferredPrompt=null;
+    dismissInstallBanner();
+  });
+}
+function dismissInstallBanner(){
+  document.getElementById('installBanner').style.display='none';
+  localStorage.setItem('pwa_dismissed','1');
+}
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  _deferredPrompt=e;
+});
+window.addEventListener('appinstalled',()=>{
+  dismissInstallBanner();
+  _deferredPrompt=null;
+});
+
 // ── INIT ──────────────────────────────────────────────────────
 loadAll().then(()=>{
   render();
+  setTimeout(showInstallBanner, 2500);
 }).catch(err=>{
   console.error('Error loading data:',err);
   document.getElementById('memberName').textContent='Error de conexión';
