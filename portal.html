@@ -636,6 +636,37 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- MODAL: BENEFICIO GENÉRICO (tipos configurables) -->
+<div class="overlay" id="modalBenGenerico" onclick="closeOverlay(event,'modalBenGenerico')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title" id="benGenTitle">Solicitar Beneficio</div>
+      <button class="modal-close" onclick="closeModal('modalBenGenerico')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:20px" id="benGenDesc"></p>
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:14px 16px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">DISPONIBLE</div><div style="font-size:20px;font-weight:700;color:#fff" id="benGenDisp">—</div></div>
+        <div><div style="font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">UTILIZADO</div><div style="font-size:20px;font-weight:700;color:rgba(255,255,255,.5)" id="benGenUsado">—</div></div>
+      </div>
+      <div class="mfield">
+        <label id="benGenMontoLbl">Monto a solicitar</label>
+        <input type="number" id="benGenMonto" min="1" placeholder="0" oninput="updateBenGenBar()"/>
+        <div class="modal-limit-bar"><div class="modal-limit-fill" id="benGenBar" style="width:0%"></div></div>
+        <div class="hint" id="benGenHint"></div>
+      </div>
+      <div class="mfield">
+        <label>Descripción / motivo</label>
+        <input id="benGenNotas" placeholder="Describe para qué utilizarás este beneficio"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm-out" onclick="closeModal('modalBenGenerico')">Cancelar</button>
+      <button class="btn-sm" onclick="submitBenGenerico()">Enviar Solicitud</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: EVENTO DETALLE -->
 <div class="overlay" id="modalEvento" onclick="closeOverlay(event,'modalEvento')">
   <div class="modal" onclick="event.stopPropagation()">
@@ -687,12 +718,12 @@ const _MEMBER_ID=localStorage.getItem('ad_member_id');
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
 let _member=null,_memberUser=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[],
     _myDocs=[],_myPayments=[],_myReferrals=[],_reqDocs=[],_cfgGeneral={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
-    _myPhotos=[],
+    _myPhotos=[],_memberReqDocs=[],_benTypes=[],_benLimits=[],
     _cc={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
 
 async function loadAll(){
   const adUser=localStorage.getItem('ad_user');
-  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes,rdocsRes,cgenRes,photosRes]=await Promise.all([
+  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes,rdocsRes,cgenRes,photosRes,mrdRes,benTypesRes,benLimsRes]=await Promise.all([
     SB.from('members').select('*').eq('id',_MEMBER_ID).single(),
     SB.from('member_users').select('*').eq('member_id',_MEMBER_ID).maybeSingle(),
     SB.from('socios').select('*').order('nombre'),
@@ -706,6 +737,9 @@ async function loadAll(){
     SB.from('config_required_docs').select('*').eq('activo',true).order('orden'),
     SB.from('config_general').select('*'),
     SB.from('event_photos').select('id,event_name,title,file_data,file_type,uploaded_at').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
+    SB.from('member_required_docs').select('*').eq('member_id',_MEMBER_ID).eq('activo',true).order('orden'),
+    SB.from('config_benefit_types').select('*').eq('activo',true).order('orden'),
+    SB.from('config_benefit_limits').select('*'),
   ]);
   _member=memberRes.data;
   _memberUser=muRes.data||null;
@@ -718,6 +752,9 @@ async function loadAll(){
   _myReferrals=refRes.data||[];
   _reqDocs=rdocsRes.data||[];
   _myPhotos=photosRes.data||[];
+  _memberReqDocs=mrdRes.data||[];
+  _benTypes=benTypesRes.data||[];
+  _benLimits=benLimsRes.data||[];
   if(cgenRes.data?.length){cgenRes.data.forEach(r=>{_cfgGeneral[r.key]=r.value;});}
   if(ccRes.data?.length){ccRes.data.forEach(r=>{_cc[r.key]=r.value;});}
   const eEl=document.getElementById('ccEmail');const wEl=document.getElementById('ccWhatsapp');const hEl=document.getElementById('ccHorario');
@@ -776,16 +813,46 @@ function getBenData(){
   const locked=areBenefitsLocked();
   const nivel=m.nivel||'Alpha Premium';
   const lim=getLimites()[nivel]||{efectivo:150000,servicio:50000};
+  const range=getBenefitYearRange();
   const svUsado=locked?0:servicioUsado();
   const efUsado=locked?0:efectivoUsado();
   const svRest=Math.max(0,lim.servicio-svUsado);
   const efRest=Math.max(0,lim.efectivo-efUsado);
-  return [
+  const bens=[
     {id:'tour',num:'01',title:'Road Tour VIP',desc:'Acceso a todos los Road Tours organizados por Alpha Drivers. Experiencias exclusivas en circuito y carretera con los mejores supercars de México.',val:'1 / 10',unit:'Años completados',pct:10,lbl1:'Año 1',lbl2:'10% completado',tag:'En curso',modal:'modalRoadTour'},
     {id:'efectivo',num:'02',title:'Beneficio en Efectivo',desc:'Bono anual en efectivo disponible para gastar en lo que prefieras. Se renueva cada año de membresía activa.',val:fmtMXN(efRest),unit:'MXN disponibles',pct:Math.round(efUsado/lim.efectivo*100),lbl1:fmtMXN(efUsado)+' utilizado',lbl2:fmtMXN(efRest)+' restante',tag:'Activo',modal:'modalEfectivo',limite:lim.efectivo,usado:efUsado},
     {id:'servicio',num:'03',title:'Crédito de Servicio',desc:'Crédito para usar en nuestra red de socios: talleres, detailing, aseguradores, restaurantes y más.',val:fmtMXN(svRest),unit:'MXN en red de socios',pct:Math.round(svUsado/lim.servicio*100),lbl1:fmtMXN(svUsado)+' utilizado',lbl2:fmtMXN(svRest)+' restante',tag:'En uso',modal:'modalServicio',limite:lim.servicio,usado:svUsado},
     {id:'eco',num:'04',title:'Ecosistema AD',desc:'Participación en el ecosistema Alpha Drivers. Recibes un porcentaje de los ingresos anuales del club como miembro fundador.',val:'5%',unit:'Participación anual compartida',pct:100,lbl1:'Activo',lbl2:'Confirmado',tag:'Confirmado',modal:'modalEcosistema'},
   ];
+  // Append configurable benefit types
+  _benTypes.forEach(bt=>{
+    const btLim=_benLimits.find(l=>l.benefit_type_id===bt.id&&l.nivel===nivel);
+    const maxAmt=Number(btLim?.max_amount||0);
+    const usado=locked?0:_myReqs
+      .filter(r=>r.tipo===bt.name&&r.status!=='Rechazado'&&range&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye)
+      .reduce((s,r)=>s+(Number(r.monto)||0),0);
+    const rest=Math.max(0,maxAmt-usado);
+    const pct=maxAmt?Math.round(usado/maxAmt*100):0;
+    bens.push({
+      id:'custom_'+bt.id,
+      num:String(bens.length+1).padStart(2,'0'),
+      title:bt.name,
+      desc:bt.descripcion||bt.name,
+      val:fmtMXN(rest),
+      unit:(bt.unit||'MXN')+' disponibles',
+      pct,
+      lbl1:fmtMXN(usado)+' utilizado',
+      lbl2:fmtMXN(rest)+' restante',
+      tag:'Activo',
+      modal:'modalBenGenerico',
+      _btId:bt.id,
+      _btName:bt.name,
+      _btUnit:bt.unit||'MXN',
+      limite:maxAmt,
+      usado,
+    });
+  });
+  return bens;
 }
 
 // ── DOCUMENTS ────────────────────────────────────────────────
@@ -870,11 +937,13 @@ function renderDocs(){
       contractEl.innerHTML='';
     }
   }
-  // Required docs checklist
+  // Required docs checklist — member-specific overrides global
   const reqEl=document.getElementById('reqDocsList');
-  if(reqEl&&_reqDocs.length){
-    reqEl.innerHTML=`<div style="margin-bottom:20px"><div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Documentos Requeridos</div>`+
-    _reqDocs.map(rd=>{
+  const docsToShow=_memberReqDocs.length?_memberReqDocs:_reqDocs;
+  if(reqEl&&docsToShow.length){
+    const label=_memberReqDocs.length?'Documentos Requeridos (Personalizados)':'Documentos Requeridos';
+    reqEl.innerHTML=`<div style="margin-bottom:20px"><div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">${label}</div>`+
+    docsToShow.map(rd=>{
       const uploaded=_myDocs.find(d=>d.doc_type===rd.name&&d.status!=='Rechazado');
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
         <div style="width:16px;height:16px;border-radius:50%;border:1.5px solid ${uploaded?'var(--green)':'rgba(255,255,255,.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -1136,7 +1205,7 @@ function render(){
       <div class="ben-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
       ${lockNote}
       <div class="ben-actions" style="margin-top:${locked?'8px':'auto'}">
-        ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\')">Solicitar</button>'}
+        ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\''+(b._btId?',\''+b._btId+'\'':'')+')">Solicitar</button>'}
         <button class="btn-ver" onclick="showView('beneficios',null)">Ver detalle</button>
       </div>
     </div>`).join('');
@@ -1144,7 +1213,7 @@ function render(){
   // Ben detalle (beneficios view)
   document.getElementById('benDetalle').innerHTML=bens.map(b=>`
     <div class="ben-detail-card">
-      <div class="bdc-num">${b.num} / 04</div>
+      <div class="bdc-num">${b.num} / ${String(bens.length).padStart(2,'0')}</div>
       <div class="bdc-title">${b.title}</div>
       <div class="bdc-desc">${b.desc}</div>
       <div class="bdc-val">${b.val}</div>
@@ -1153,7 +1222,7 @@ function render(){
       <div class="bdc-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
       ${lockNote}
       <div class="bdc-actions" style="margin-top:${locked?'8px':'auto'}">
-        ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\')">Solicitar beneficio</button>'}
+        ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\''+(b._btId?',\''+b._btId+'\'':'')+')">Solicitar beneficio</button>'}
         <button class="btn-ver" onclick="showView('solicitudes',null)">Mis solicitudes</button>
       </div>
     </div>`).join('');
@@ -1236,7 +1305,35 @@ function showView(id,btn){
 }
 
 // ── BENEFIT MODALS ────────────────────────────────────────────
-function openBenModal(modalId){
+let _activeBenType=null;
+function openBenModal(modalId,btId){
+  // Custom configurable benefit type
+  if(modalId==='modalBenGenerico'&&btId){
+    const bt=_benTypes.find(x=>x.id===btId);
+    if(!bt)return;
+    const m=getMember();
+    const nivel=m.nivel||'Alpha Premium';
+    const btLim=_benLimits.find(l=>l.benefit_type_id===btId&&l.nivel===nivel);
+    const maxAmt=Number(btLim?.max_amount||0);
+    const range=getBenefitYearRange();
+    const usado=_myReqs
+      .filter(r=>r.tipo===bt.name&&r.status!=='Rechazado'&&range&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye)
+      .reduce((s,r)=>s+(Number(r.monto)||0),0);
+    const rest=Math.max(0,maxAmt-usado);
+    _activeBenType={id:bt.id,name:bt.name,unit:bt.unit||'MXN',limite:maxAmt,usado,rest};
+    document.getElementById('benGenTitle').textContent=bt.name;
+    document.getElementById('benGenDesc').textContent=bt.descripcion||bt.name;
+    document.getElementById('benGenDisp').textContent=fmtMXN(rest);
+    document.getElementById('benGenUsado').textContent=fmtMXN(usado);
+    document.getElementById('benGenMontoLbl').textContent='Monto a solicitar ('+(bt.unit||'MXN')+')';
+    document.getElementById('benGenHint').textContent='Disponible: '+fmtMXN(rest)+' '+(bt.unit||'MXN');
+    document.getElementById('benGenMonto').dataset.max=rest;
+    document.getElementById('benGenMonto').value='';
+    document.getElementById('benGenNotas').value='';
+    document.getElementById('benGenBar').style.width='0%';
+    openModal('modalBenGenerico');
+    return;
+  }
   // Road Tour: populate dates
   if(modalId==='modalRoadTour'){
     const tours=getRoadTours();
@@ -1303,6 +1400,38 @@ function updateSvBar(){
   }
 }
 
+function updateBenGenBar(){
+  const max=Number(document.getElementById('benGenMonto').dataset.max)||1;
+  const val=Number(document.getElementById('benGenMonto').value)||0;
+  document.getElementById('benGenBar').style.width=Math.min(100,val/max*100)+'%';
+}
+async function submitBenGenerico(){
+  if(!_activeBenType){return;}
+  const monto=Number(document.getElementById('benGenMonto').value);
+  const rest=_activeBenType.rest;
+  if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
+  if(monto>rest){alert('El monto supera tu saldo disponible ('+fmtMXN(rest)+' '+_activeBenType.unit+')');return;}
+  const notas=document.getElementById('benGenNotas').value.trim();
+  const m=getMember();
+  const req={
+    id:'br'+Date.now(),
+    member_id:m.id||'001',
+    member_name:m.name||'Miembro Alpha',
+    tipo:_activeBenType.name,
+    detalle:_activeBenType.name,
+    monto,
+    notas,
+    status:'Pendiente',
+    fecha:new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}),
+    admin_nota:'',
+  };
+  const {data:d,error}=await SB.from('benefit_requests').insert(req).select().single();
+  if(error){alert('Error al enviar: '+error.message);return;}
+  _myReqs.unshift(d||req);
+  closeModal('modalBenGenerico');
+  toast('Solicitud enviada — te notificaremos cuando sea procesada');
+  render();
+}
 // ── SUBMIT BENEFIT ────────────────────────────────────────────
 async function submitBenefit(tipo){
   let detalle='', monto=null, notas='';

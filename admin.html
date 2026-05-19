@@ -245,12 +245,13 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     <div class="view" id="view-config">
       <div class="cfg-grid">
         <div class="cfg-card">
-          <div class="cfg-card-title">Límites por Nivel de Membresía</div>
-          <div class="cfg-row"><span class="cfg-lbl">Alpha Premium — Efectivo (MXN)</span><input class="cfg-input" id="cfgP1" type="number" value="150000"/></div>
-          <div class="cfg-row"><span class="cfg-lbl">Alpha Premium — Crédito Servicio (MXN)</span><input class="cfg-input" id="cfgP2" type="number" value="50000"/></div>
-          <div class="cfg-row"><span class="cfg-lbl">Alpha — Efectivo (MXN)</span><input class="cfg-input" id="cfgA1" type="number" value="100000"/></div>
-          <div class="cfg-row"><span class="cfg-lbl">Alpha — Crédito Servicio (MXN)</span><input class="cfg-input" id="cfgA2" type="number" value="30000"/></div>
-          <div style="margin-top:20px"><button class="btn-sm" onclick="saveLimites()">Guardar Límites</button></div>
+          <div class="cfg-card-title">Niveles de Membresía</div>
+          <p style="font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.04em;margin-bottom:20px;line-height:1.7">Define los niveles de membresía y sus límites de beneficios anuales en MXN. Puedes agregar tantos niveles como necesites.</p>
+          <div id="nivelesListAdmin" style="margin-bottom:16px"></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input id="newNivelName" type="text" placeholder="Nombre del nuevo nivel" style="flex:1;min-width:160px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
+            <button class="btn-sm" onclick="addNivel()">+ Agregar Nivel</button>
+          </div>
         </div>
         <div class="cfg-card">
           <div class="cfg-card-title">Road Tour VIP — Fechas Disponibles</div>
@@ -275,6 +276,18 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
           <input id="newDocName" type="text" placeholder="Nombre del documento" style="flex:1;min-width:180px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
           <input id="newDocDesc" type="text" placeholder="Descripción (opcional)" style="flex:2;min-width:200px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
           <button class="btn-sm" onclick="addRequiredDoc()">+ Agregar</button>
+        </div>
+      </div>
+      <!-- Tipos de Beneficio Adicionales -->
+      <div class="cfg-card" style="margin-top:16px">
+        <div class="cfg-card-title">Tipos de Beneficio Adicionales</div>
+        <p style="font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.04em;margin-bottom:20px;line-height:1.7">Crea nuevos tipos de beneficio con límite anual por nivel. Los miembros podrán solicitarlos desde su portal con el mismo flujo de aprobación.</p>
+        <div id="benTypesList" style="margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="newBenTypeName" type="text" placeholder="Nombre (ej: Combustible)" style="flex:1;min-width:140px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
+          <input id="newBenTypeDesc" type="text" placeholder="Descripción" style="flex:2;min-width:180px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
+          <input id="newBenTypeUnit" type="text" placeholder="Unidad (MXN, días...)" style="width:130px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
+          <button class="btn-sm" onclick="addBenType()">+ Agregar</button>
         </div>
       </div>
       <!-- Contrato -->
@@ -327,7 +340,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
       <div class="mfield"><label>Email</label><input id="aEmail" type="email" placeholder="correo@email.com"/></div>
       <div class="mfield"><label>Ciudad</label><input id="aCity" placeholder="Ciudad de México"/></div>
       <div class="mfield"><label>Vehículo</label><input id="aVehicle" placeholder="Ej. Porsche 911 GT3"/></div>
-      <div class="mfield"><label>Nivel</label><select id="aNivel"><option>Alpha Premium</option><option>Alpha</option></select></div>
+      <div class="mfield"><label>Nivel</label><select id="aNivel"></select></div>
       <div class="mfield"><label>Estado</label><select id="aStatus"><option value="Activo">Activo</option><option value="Pago Pendiente">Pago Pendiente</option></select></div>
       <div class="mfield"><label>Fecha de Inicio de Beneficios</label><input id="aBenStart" type="date"/><div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:6px">Desde esta fecha se activan y contabilizan los beneficios anuales</div></div>
     </div>
@@ -505,10 +518,10 @@ let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_STAFF=[],_PAGOS=[],_DOCS=[],_ICODES=
     _LIM={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},
     _CC={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'},
     _REQ_DOCS=[],_CFG_GENERAL={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
-    _EPHOTOS=[];
+    _EPHOTOS=[],_BEN_TYPES=[],_BEN_LIMITS=[],_MEMBER_DOCS={};
 
 async function loadAll(){
-  const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes,rdocs,cgen,ephotos]=await Promise.all([
+  const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes,rdocs,cgen,ephotos,benTypes,benLims]=await Promise.all([
     SB.from('members').select('*').order('created_at'),
     SB.from('member_users').select('*'),
     SB.from('applications').select('*').order('created_at',{ascending:false}),
@@ -524,11 +537,15 @@ async function loadAll(){
     SB.from('config_required_docs').select('*').order('orden'),
     SB.from('config_general').select('*'),
     SB.from('event_photos').select('id,member_id,member_name,event_name,title,file_type,uploaded_at').order('uploaded_at',{ascending:false}),
+    SB.from('config_benefit_types').select('*').eq('activo',true).order('orden'),
+    SB.from('config_benefit_limits').select('*'),
   ]);
   _M=m.data||[];_MU=mu.data||[];_A=a.data||[];_S=s.data||[];_RT=rt.data||[];_BR=br.data||[];_STAFF=staff.data||[];
   _PAGOS=pagos.data||[];_DOCS=docs.data||[];_ICODES=icodes.data||[];
   _REQ_DOCS=rdocs.data||[];
   _EPHOTOS=ephotos.data||[];
+  _BEN_TYPES=benTypes.data||[];
+  _BEN_LIMITS=benLims.data||[];
   if(cgen.data?.length){cgen.data.forEach(r=>{_CFG_GENERAL[r.key]=r.value;});}
   if(lim.data?.length){_LIM={};lim.data.forEach(l=>{_LIM[l.nivel]={efectivo:Number(l.efectivo),servicio:Number(l.servicio)};});}
   if(cc.data?.length){cc.data.forEach(r=>{_CC[r.key]=r.value;});}
@@ -692,17 +709,15 @@ function renderView(name){
       :'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin documentos</td></tr>';
   }
   if(name==='config'){
-    document.getElementById('cfgP1').value=_LIM['Alpha Premium']?.efectivo??150000;
-    document.getElementById('cfgP2').value=_LIM['Alpha Premium']?.servicio??50000;
-    document.getElementById('cfgA1').value=_LIM['Alpha']?.efectivo??100000;
-    document.getElementById('cfgA2').value=_LIM['Alpha']?.servicio??30000;
     document.getElementById('cfgCEmail').value=_CC.email||'';
     document.getElementById('cfgCWhatsapp').value=_CC.whatsapp||'';
     document.getElementById('cfgCHorario').value=_CC.horario||'';
+    renderNiveles();
     renderRoadTours();
     renderInviteCodes();
     renderRequiredDocs();
     renderContract();
+    renderBenTypes();
   }
 }
 
@@ -764,6 +779,16 @@ function openMember(id){
       }
     </div>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Documentos Personalizados</div>
+      <p style="font-size:10px;color:rgba(255,255,255,.28);line-height:1.6;margin-bottom:10px">Si asignas documentos aquí, este miembro verá solo estos en su portal (reemplaza la lista global).</p>
+      <div id="mdMemberDocs" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="mdDocName" placeholder="Nombre del documento" style="flex:1;min-width:160px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
+        <input type="text" id="mdDocDesc" placeholder="Descripción (opcional)" style="flex:2;min-width:160px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
+        <button class="btn-sm" onclick="addMemberReqDoc('${id}')">+ Doc</button>
+      </div>
+    </div>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Fotos de Eventos</div>
       <div id="mdPhotosWrap" style="margin-bottom:12px"></div>
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
@@ -783,6 +808,7 @@ function openMember(id){
       </div>
     </div>`;
   renderMemberPhotos(id);
+  loadMemberReqDocs(id);
   const isInactive=m.status==='Inactivo';
   document.getElementById('mdDeactivateBtn').style.display=isInactive?'none':'';
   document.getElementById('mdReactivateBtn').style.display=isInactive?'':'none';
@@ -871,7 +897,11 @@ async function deleteEventPhoto(photoId,memberId){
   _EPHOTOS=_EPHOTOS.filter(p=>p.id!==photoId);
   renderMemberPhotos(memberId);toast('Foto eliminada');
 }
-function openAddMember(){openModal('modalAdd');}
+function openAddMember(){
+  const sel=document.getElementById('aNivel');
+  sel.innerHTML=Object.keys(_LIM).map(n=>`<option>${n}</option>`).join('');
+  openModal('modalAdd');
+}
 async function saveMember(){
   const name=document.getElementById('aName').value.trim();
   if(!name){alert('El nombre es requerido');return;}
@@ -911,7 +941,8 @@ async function approveApp(){
   const maxNum=_M.reduce((mx,m)=>Math.max(mx,parseInt(m.numero||m.id)||0),0);
   const numero=String(maxNum+1).padStart(3,'0');
   const newId='m'+Date.now();
-  const member={id:newId,numero,name:a.name,email:a.email,city:a.city,vehicle:a.vehicle,nivel:'Alpha Premium',date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:'Activo'};
+  const defaultNivel=Object.keys(_LIM)[0]||'Alpha Premium';
+  const member={id:newId,numero,name:a.name,email:a.email,city:a.city,vehicle:a.vehicle,nivel:defaultNivel,date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:'Activo'};
   const {data:d,error:e2}=await SB.from('members').insert(member).select().single();
   if(e2){alert('Error al crear miembro: '+e2.message);return;}
   _M.push(d);
@@ -1431,16 +1462,180 @@ function copyUnusedCodes(){
   navigator.clipboard.writeText(available).then(()=>toast('Códigos copiados al portapapeles')).catch(()=>toast('No se pudo copiar'));
 }
 
-// ── LIMITS ────────────────────────────────────────────────────
+// ── LEVELS ────────────────────────────────────────────────────
+function renderNiveles(){
+  const el=document.getElementById('nivelesListAdmin');if(!el)return;
+  const niveles=Object.entries(_LIM);
+  if(!niveles.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);padding:8px 0;margin-bottom:8px">Sin niveles configurados</div>';return;}
+  el.innerHTML=niveles.map(([nivel,vals])=>`
+    <div style="padding:12px;background:#0a0a0a;border:1px solid rgba(255,255,255,.07);margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:.08em;color:#fff">${nivel}</div>
+        <button onclick="deleteNivel('${nivel.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px" title="Eliminar nivel">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:4px">EFECTIVO (MXN)</div>
+          <input type="number" data-nivel="${nivel}" data-field="efectivo" class="cfg-input nivel-input" value="${vals.efectivo}" style="width:100%;box-sizing:border-box"/>
+        </div>
+        <div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:4px">CRÉDITO SERVICIO (MXN)</div>
+          <input type="number" data-nivel="${nivel}" data-field="servicio" class="cfg-input nivel-input" value="${vals.servicio}" style="width:100%;box-sizing:border-box"/>
+        </div>
+      </div>
+    </div>`).join('')+
+    '<div style="margin-top:4px"><button class="btn-sm" onclick="saveLimites()">Guardar Límites</button></div>';
+}
+async function addNivel(){
+  const name=(document.getElementById('newNivelName').value||'').trim();
+  if(!name){toast('Escribe el nombre del nivel');return;}
+  if(_LIM[name]){toast('Ya existe un nivel con ese nombre');return;}
+  const row={nivel:name,efectivo:50000,servicio:20000};
+  const {error}=await SB.from('config_limites').insert(row);
+  if(error){alert('Error: '+error.message);return;}
+  _LIM[name]={efectivo:50000,servicio:20000};
+  document.getElementById('newNivelName').value='';
+  renderNiveles();
+  toast('Nivel "'+name+'" agregado');
+}
+async function deleteNivel(nivel){
+  if(!confirm('¿Eliminar el nivel "'+nivel+'"?\n\nLos miembros con este nivel no serán eliminados pero quedarán sin límites configurados.'))return;
+  const {error}=await SB.from('config_limites').delete().eq('nivel',nivel);
+  if(error){alert('Error: '+error.message);return;}
+  delete _LIM[nivel];
+  renderNiveles();
+  toast('Nivel eliminado');
+}
 async function saveLimites(){
-  const lim={
-    'Alpha Premium':{efectivo:Number(document.getElementById('cfgP1').value),servicio:Number(document.getElementById('cfgP2').value)},
-    'Alpha':{efectivo:Number(document.getElementById('cfgA1').value),servicio:Number(document.getElementById('cfgA2').value)},
-  };
-  const upserts=Object.entries(lim).map(([nivel,vals])=>({nivel,...vals}));
+  const inputs=document.querySelectorAll('.nivel-input');
+  const newLim={};
+  inputs.forEach(inp=>{
+    const nivel=inp.dataset.nivel;
+    if(!newLim[nivel])newLim[nivel]={efectivo:0,servicio:0};
+    newLim[nivel][inp.dataset.field]=Number(inp.value)||0;
+  });
+  if(!Object.keys(newLim).length){toast('Sin niveles para guardar');return;}
+  const upserts=Object.entries(newLim).map(([nivel,vals])=>({nivel,...vals}));
   const {error}=await SB.from('config_limites').upsert(upserts,{onConflict:'nivel'});
   if(error){alert('Error al guardar: '+error.message);return;}
-  _LIM=lim;toast('Límites guardados correctamente');
+  _LIM=newLim;toast('Límites guardados correctamente');
+}
+
+// ── BENEFIT TYPES ────────────────────────────────────────────
+function renderBenTypes(){
+  const el=document.getElementById('benTypesList');if(!el)return;
+  if(!_BEN_TYPES.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);padding:8px 0;margin-bottom:8px">Sin tipos de beneficio adicionales configurados</div>';return;}
+  el.innerHTML=_BEN_TYPES.map(bt=>{
+    const limsByLevel=_BEN_LIMITS.filter(l=>l.benefit_type_id===bt.id);
+    const nivelesHtml=Object.keys(_LIM).map(nivel=>{
+      const lim=limsByLevel.find(l=>l.nivel===nivel);
+      return `<div>
+        <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.08em;margin-bottom:4px">${nivel}</div>
+        <input type="number" data-bt="${bt.id}" data-nivel="${nivel}" class="cfg-input ben-lim-input" value="${lim?.max_amount||0}" style="width:100%;box-sizing:border-box" placeholder="0"/>
+      </div>`;
+    }).join('');
+    return `<div style="padding:12px;background:#0a0a0a;border:1px solid rgba(255,255,255,.07);margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#fff">${bt.name}</div>
+          ${bt.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${bt.descripcion}</div>`:''}
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.06em">${bt.unit||'MXN'}</span>
+          <button onclick="deleteBenType('${bt.id}')" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+        </div>
+      </div>
+      ${Object.keys(_LIM).length?`<div>
+        <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:8px;margin-top:10px">LÍMITES POR NIVEL (${bt.unit||'MXN'})</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:8px">${nivelesHtml}</div>
+        <button class="btn-sm-out" style="font-size:10px;padding:6px 14px" onclick="saveBenTypeLimits('${bt.id}')">Guardar Límites</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+async function addBenType(){
+  const name=(document.getElementById('newBenTypeName').value||'').trim();
+  if(!name){toast('Escribe el nombre del tipo de beneficio');return;}
+  const desc=document.getElementById('newBenTypeDesc').value.trim();
+  const unit=document.getElementById('newBenTypeUnit').value.trim()||'MXN';
+  const id='bt'+Date.now();
+  const {data,error}=await SB.from('config_benefit_types').insert({id,name,descripcion:desc,unit,activo:true,orden:_BEN_TYPES.length+1}).select().single();
+  if(error){alert('Error: '+error.message);return;}
+  _BEN_TYPES.push(data);
+  ['newBenTypeName','newBenTypeDesc','newBenTypeUnit'].forEach(i=>document.getElementById(i).value='');
+  renderBenTypes();
+  toast('Tipo de beneficio "'+name+'" agregado');
+}
+async function deleteBenType(id){
+  if(!confirm('¿Eliminar este tipo de beneficio? Se eliminarán también sus límites configurados.'))return;
+  await SB.from('config_benefit_limits').delete().eq('benefit_type_id',id);
+  const {error}=await SB.from('config_benefit_types').delete().eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  _BEN_TYPES=_BEN_TYPES.filter(bt=>bt.id!==id);
+  _BEN_LIMITS=_BEN_LIMITS.filter(l=>l.benefit_type_id!==id);
+  renderBenTypes();
+  toast('Tipo de beneficio eliminado');
+}
+async function saveBenTypeLimits(btId){
+  const inputs=document.querySelectorAll(`.ben-lim-input[data-bt="${btId}"]`);
+  if(!inputs.length){toast('Sin niveles configurados');return;}
+  const upserts=[];
+  inputs.forEach(inp=>{
+    const nivel=inp.dataset.nivel;
+    const max_amount=Number(inp.value)||0;
+    const existing=_BEN_LIMITS.find(l=>l.benefit_type_id===btId&&l.nivel===nivel);
+    const rowId=existing?existing.id:('bl'+Date.now()+Math.random().toString(36).substr(2,4));
+    upserts.push({id:rowId,benefit_type_id:btId,nivel,max_amount});
+  });
+  const {error}=await SB.from('config_benefit_limits').upsert(upserts,{onConflict:'id'});
+  if(error){alert('Error: '+error.message);return;}
+  upserts.forEach(u=>{
+    const idx=_BEN_LIMITS.findIndex(l=>l.benefit_type_id===u.benefit_type_id&&l.nivel===u.nivel);
+    if(idx>=0)_BEN_LIMITS[idx]=u;else _BEN_LIMITS.push(u);
+  });
+  toast('Límites guardados');
+}
+
+// ── MEMBER REQUIRED DOCS ──────────────────────────────────────
+async function loadMemberReqDocs(memberId){
+  const {data}=await SB.from('member_required_docs').select('*').eq('member_id',memberId).order('orden');
+  _MEMBER_DOCS[memberId]=data||[];
+  renderMemberReqDocs(memberId);
+}
+function renderMemberReqDocs(memberId){
+  const el=document.getElementById('mdMemberDocs');if(!el)return;
+  const docs=_MEMBER_DOCS[memberId]||[];
+  if(!docs.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:8px">Sin documentos personalizados — se muestran los documentos globales</div>';return;}
+  el.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+    <div style="flex:1">
+      <div style="font-size:11px;color:#fff">${d.name}</div>
+      ${d.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35)">${d.descripcion}</div>`:''}
+    </div>
+    <button onclick="deleteMemberReqDoc('${d.id}','${memberId}')" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+  </div>`).join('');
+}
+async function addMemberReqDoc(memberId){
+  const name=(document.getElementById('mdDocName').value||'').trim();
+  if(!name){toast('Escribe el nombre del documento');return;}
+  const desc=document.getElementById('mdDocDesc').value.trim();
+  const existing=_MEMBER_DOCS[memberId]||[];
+  const orden=(existing.length?Math.max(...existing.map(d=>d.orden||0)):0)+1;
+  const id='mrd'+Date.now();
+  const {data,error}=await SB.from('member_required_docs').insert({id,member_id:memberId,name,descripcion:desc,activo:true,orden}).select().single();
+  if(error){alert('Error: '+error.message);return;}
+  if(!_MEMBER_DOCS[memberId])_MEMBER_DOCS[memberId]=[];
+  _MEMBER_DOCS[memberId].push(data);
+  document.getElementById('mdDocName').value='';
+  document.getElementById('mdDocDesc').value='';
+  renderMemberReqDocs(memberId);
+  toast('Documento agregado');
+}
+async function deleteMemberReqDoc(docId,memberId){
+  const {error}=await SB.from('member_required_docs').delete().eq('id',docId);
+  if(error){alert('Error: '+error.message);return;}
+  if(_MEMBER_DOCS[memberId])_MEMBER_DOCS[memberId]=_MEMBER_DOCS[memberId].filter(d=>d.id!==docId);
+  renderMemberReqDocs(memberId);
+  toast('Documento eliminado');
 }
 
 // ── MODAL UTILS ───────────────────────────────────────────────
