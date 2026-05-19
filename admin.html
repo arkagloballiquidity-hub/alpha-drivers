@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ALPHA DRIVERS — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--h:'Bebas Neue',sans-serif;--b:'Inter',sans-serif;--green:#2ec4b6;--amber:#f4a261;--red:#e63946}
@@ -357,6 +358,12 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
 <div class="toast" id="toast"></div>
 
 <script>
+// ── SUPABASE ──────────────────────────────────────────────────
+const SB=supabase.createClient(
+  'https://fggchwkbvelqiofkojqn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
+);
+
 // ── AUTH ──────────────────────────────────────────────────────
 (function(){
   if(localStorage.getItem('ad_role')!=='admin'){location.replace('/login');}
@@ -364,48 +371,30 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
 })();
 function logout(){localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');localStorage.removeItem('ad_session');location.href='/login';}
 
-// ── SEED DATA ─────────────────────────────────────────────────
-const SEED_MEMBERS=[
-  {id:'001',name:'Carlos Mendoza',email:'carlos@email.com',city:'Ciudad de México',vehicle:'Porsche 911 GT3RS',nivel:'Alpha Premium',date:'Ene 2025',status:'Activo'},
-  {id:'002',name:'Ricardo Fuentes',email:'rfuentes@email.com',city:'Guadalajara',vehicle:'Ferrari F8 Tributo',nivel:'Alpha Premium',date:'Feb 2025',status:'Activo'},
-  {id:'003',name:'Alejandro Torres',email:'atores@email.com',city:'Monterrey',vehicle:'McLaren 720S',nivel:'Alpha',date:'Mar 2025',status:'Pago Pendiente'},
-  {id:'004',name:'Jorge Villanueva',email:'jvilla@email.com',city:'Ciudad de México',vehicle:'Lamborghini Huracán',nivel:'Alpha Premium',date:'Abr 2025',status:'Activo'},
-];
-const SEED_APPS=[
-  {id:'a1',name:'Miguel Ángel Reyes',email:'mreyes@email.com',city:'CDMX',vehicle:'Porsche 911 GT3',date:'15 May 2026',status:'En revisión',msg:'Coleccionista de autos de alto rendimiento, 15 años en el mundo automotriz.'},
-  {id:'a2',name:'Fernanda Castillo',email:'fcastillo@email.com',city:'Puebla',vehicle:'Ferrari F8',date:'14 May 2026',status:'En revisión',msg:'Empresaria apasionada del automovilismo de alto rendimiento.'},
-  {id:'a3',name:'Andrés Gutiérrez',email:'agutierrez@email.com',city:'Guadalajara',vehicle:'McLaren 720S',date:'12 May 2026',status:'Docs Pendientes',msg:'Piloto amateur, busca comunidad seria de entusiastas.'},
-];
-const SEED_SOCIOS=[
-  {id:'s1',nombre:'Porsche Service Center CDMX',categoria:'Taller Oficial',limite:50000,contacto:'service@porsche.mx',notas:''},
-  {id:'s2',nombre:'Ferrari Maserati México',categoria:'Taller Oficial',limite:50000,contacto:'service@ferrarimax.mx',notas:''},
-  {id:'s3',nombre:'AutoDetail Elite Polanco',categoria:'Detailing & Estética',limite:15000,contacto:'hola@autodetailite.mx',notas:'Cita previa requerida'},
-  {id:'s4',nombre:'Taller McLaren México',categoria:'Taller Oficial',limite:50000,contacto:'service@mclarenmexico.com',notas:''},
-  {id:'s5',nombre:'Sushi Ammo Polanco',categoria:'Restaurante',limite:5000,contacto:'reservas@sushiammo.com',notas:'Máx $5K por visita'},
-  {id:'s6',nombre:'Hyatt Regency CDMX',categoria:'Hospedaje',limite:20000,contacto:'grupos@hyatt.mx',notas:'Disponible vía concierge'},
-];
-const SEED_ROAD_TOURS=[
-  {id:'rt1',fecha:'14-15 Jun 2025',ruta:'CDMX → Guadalajara',cupo:20,inscritos:12},
-  {id:'rt2',fecha:'19-20 Jul 2025',ruta:'CDMX → Valle de Bravo',cupo:20,inscritos:6},
-  {id:'rt3',fecha:'23-24 Ago 2025',ruta:'CDMX → Oaxaca',cupo:20,inscritos:2},
-];
-const DEFAULT_LIMITES={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}};
+// ── IN-MEMORY CACHE ───────────────────────────────────────────
+let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_LIM={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}};
 
-// ── DATA FUNCTIONS ─────────────────────────────────────────────
-function getMembers(){return JSON.parse(localStorage.getItem('ad_members')||'null')||JSON.parse(JSON.stringify(SEED_MEMBERS));}
-function saveMembers(d){localStorage.setItem('ad_members',JSON.stringify(d));}
-function getApps(){return JSON.parse(localStorage.getItem('ad_apps')||'null')||JSON.parse(JSON.stringify(SEED_APPS));}
-function saveApps(d){localStorage.setItem('ad_apps',JSON.stringify(d));}
-function getSocios(){return JSON.parse(localStorage.getItem('ad_socios')||'null')||JSON.parse(JSON.stringify(SEED_SOCIOS));}
-function saveSocios(d){localStorage.setItem('ad_socios',JSON.stringify(d));}
-function getRoadTours(){return JSON.parse(localStorage.getItem('ad_road_tours')||'null')||JSON.parse(JSON.stringify(SEED_ROAD_TOURS));}
-function saveRoadTours(d){localStorage.setItem('ad_road_tours',JSON.stringify(d));}
-function getLimites(){return JSON.parse(localStorage.getItem('ad_limites')||'null')||JSON.parse(JSON.stringify(DEFAULT_LIMITES));}
-function saveLimitesData(d){localStorage.setItem('ad_limites',JSON.stringify(d));}
-function getBenReqs(){return JSON.parse(localStorage.getItem('ad_benefit_requests')||'[]');}
-function saveBenReqs(d){localStorage.setItem('ad_benefit_requests',JSON.stringify(d));}
-function getMemberUsers(){return JSON.parse(localStorage.getItem('ad_member_users')||'[]');}
-function saveMemberUsers(d){localStorage.setItem('ad_member_users',JSON.stringify(d));}
+async function loadAll(){
+  const [m,mu,a,s,rt,br,lim]=await Promise.all([
+    SB.from('members').select('*').order('created_at'),
+    SB.from('member_users').select('*'),
+    SB.from('applications').select('*').order('created_at',{ascending:false}),
+    SB.from('socios').select('*').order('nombre'),
+    SB.from('road_tours').select('*'),
+    SB.from('benefit_requests').select('*').order('created_at',{ascending:false}),
+    SB.from('config_limites').select('*'),
+  ]);
+  _M=m.data||[];_MU=mu.data||[];_A=a.data||[];_S=s.data||[];_RT=rt.data||[];_BR=br.data||[];
+  if(lim.data?.length){_LIM={};lim.data.forEach(l=>{_LIM[l.nivel]={efectivo:Number(l.efectivo),servicio:Number(l.servicio)};});}
+}
+
+function getMembers(){return _M;}
+function getMemberUsers(){return _MU;}
+function getApps(){return _A;}
+function getSocios(){return _S;}
+function getRoadTours(){return _RT;}
+function getBenReqs(){return _BR;}
+function getLimites(){return _LIM;}
 
 // ── HELPERS ───────────────────────────────────────────────────
 function statusClass(s){
@@ -415,19 +404,15 @@ function statusClass(s){
   return 'st-review';
 }
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
-
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
   clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),2800);
 }
-
-// Update pending count badge
 function updateBenCount(){
-  const pending=getBenReqs().filter(r=>r.status==='Pendiente').length;
+  const pending=_BR.filter(r=>r.status==='Pendiente').length;
   const el=document.getElementById('sbBenCount');
-  el.textContent=pending;
-  el.classList.toggle('show',pending>0);
+  el.textContent=pending;el.classList.toggle('show',pending>0);
 }
 
 // ── VIEWS ─────────────────────────────────────────────────────
@@ -449,39 +434,32 @@ function showView(name,btn){
   document.getElementById('pageSub').textContent=meta[1];
   renderView(name);
 }
-
 function renderView(name){
-  const members=getMembers();
-  const apps=getApps();
-  const socios=getSocios();
-  const benReqs=getBenReqs();
   updateBenCount();
-
   if(name==='dashboard'){
-    document.getElementById('kpiActive').textContent=members.filter(m=>m.status==='Activo').length;
-    document.getElementById('kpiApps').textContent=apps.filter(a=>a.status!=='Aprobado'&&a.status!=='Rechazado').length;
-    document.getElementById('kpiBenReqs').textContent=benReqs.filter(r=>r.status==='Pendiente').length;
-    document.getElementById('kpiSocios').textContent=socios.length;
-    document.getElementById('dashMembersBody').innerHTML=members.slice(-4).reverse().map(m=>`
+    document.getElementById('kpiActive').textContent=_M.filter(m=>m.status==='Activo').length;
+    document.getElementById('kpiApps').textContent=_A.filter(a=>a.status!=='Aprobado'&&a.status!=='Rechazado').length;
+    document.getElementById('kpiBenReqs').textContent=_BR.filter(r=>r.status==='Pendiente').length;
+    document.getElementById('kpiSocios').textContent=_S.length;
+    document.getElementById('dashMembersBody').innerHTML=[..._M].reverse().slice(0,4).map(m=>`
       <tr><td>${m.id}</td><td>${m.name}</td><td>${m.city}</td><td>${m.date}</td>
-      <td><span class="status ${statusClass(m.status)}">${m.status}</span></td></tr>`).join('');
-    const pending=benReqs.filter(r=>r.status==='Pendiente');
+      <td><span class="status ${statusClass(m.status)}">${m.status}</span></td></tr>`).join('')
+      ||'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:24px">Sin miembros aún</td></tr>';
+    const pending=_BR.filter(r=>r.status==='Pendiente');
     document.getElementById('dashBenReqsBody').innerHTML=pending.slice(0,5).map(r=>`
-      <tr><td>${r.memberName}</td><td>${r.tipo}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${r.detalle||''}</td><td>${r.monto?fmtMXN(r.monto):'-'}</td>
+      <tr><td>${r.member_name}</td><td>${r.tipo}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${r.detalle||''}</td><td>${r.monto?fmtMXN(r.monto):'-'}</td>
       <td><span class="status st-pending">Pendiente</span></td>
       <td><button class="tbl-action" onclick="openBenReq('${r.id}')">Revisar →</button></td></tr>`).join('')
       ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:24px">Sin solicitudes pendientes</td></tr>';
   }
-
   if(name==='members'){
-    const mUsers=getMemberUsers();
-    document.getElementById('membersBody').innerHTML=members.map(m=>{
-      const mu=mUsers.find(u=>u.memberId===m.id);
+    document.getElementById('membersBody').innerHTML=_M.map(m=>{
+      const mu=_MU.find(u=>u.member_id===m.id);
       const portalBadge=mu
-        ? (mu.active!==false
-            ? `<span class="status st-active" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')" title="${mu.username}">Activo</span>`
-            : `<span class="status st-rejected" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')">Inactivo</span>`)
-        : `<button class="tbl-action" onclick="event.stopPropagation();openCreds('${m.id}')">+ Crear</button>`;
+        ?(mu.active!==false
+            ?`<span class="status st-active" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')" title="${mu.username}">Activo</span>`
+            :`<span class="status st-rejected" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')">Inactivo</span>`)
+        :`<button class="tbl-action" onclick="event.stopPropagation();openCreds('${m.id}')">+ Crear</button>`;
       return `<tr class="clickable" onclick="openMember('${m.id}')">
         <td>${m.id}</td><td>${m.name}</td><td>${m.city}</td><td>${m.vehicle}</td><td>${m.date}</td>
         <td><span class="status ${statusClass(m.status)}">${m.status}</span></td>
@@ -490,25 +468,23 @@ function renderView(name){
       </tr>`;
     }).join('')||'<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin miembros registrados</td></tr>';
   }
-
   if(name==='apps'){
-    document.getElementById('appsBody').innerHTML=apps.map(a=>`
+    document.getElementById('appsBody').innerHTML=_A.map(a=>`
       <tr><td>${a.name}</td><td>${a.city}</td><td>${a.vehicle}</td><td>${a.date}</td>
       <td><span class="status ${statusClass(a.status)}">${a.status}</span></td>
-      <td><button class="tbl-action" onclick="openApp('${a.id}')">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`).join('');
+      <td><button class="tbl-action" onclick="openApp('${a.id}')">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`).join('')
+      ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes</td></tr>';
   }
-
   if(name==='ben-reqs'){
-    document.getElementById('benReqsBody').innerHTML=benReqs.length?benReqs.slice().reverse().map(r=>`
-      <tr><td>${r.memberName}</td><td>${r.tipo}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${r.detalle||''}</td>
+    document.getElementById('benReqsBody').innerHTML=_BR.length?[..._BR].map(r=>`
+      <tr><td>${r.member_name}</td><td>${r.tipo}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${r.detalle||''}</td>
       <td>${r.monto?fmtMXN(r.monto):'-'}</td><td style="font-size:11px">${r.fecha}</td>
       <td><span class="status ${statusClass(r.status)}">${r.status}</span></td>
       <td><button class="tbl-action" onclick="openBenReq('${r.id}')">Ver →</button></td></tr>`).join('')
       :'<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes de beneficios</td></tr>';
   }
-
   if(name==='socios'){
-    document.getElementById('sociosBody').innerHTML=socios.map(s=>`
+    document.getElementById('sociosBody').innerHTML=_S.map(s=>`
       <tr>
         <td>${s.nombre}${s.notas?`<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">${s.notas}</div>`:''}</td>
         <td><span class="status st-review">${s.categoria}</span></td>
@@ -519,15 +495,13 @@ function renderView(name){
           <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
           <button class="tbl-action" style="color:var(--red)" onclick="deleteSocio('${s.id}')">Eliminar</button>
         </td>
-      </tr>`).join('');
+      </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin socios</td></tr>';
   }
-
   if(name==='config'){
-    const lim=getLimites();
-    document.getElementById('cfgP1').value=lim['Alpha Premium']?.efectivo??150000;
-    document.getElementById('cfgP2').value=lim['Alpha Premium']?.servicio??50000;
-    document.getElementById('cfgA1').value=lim['Alpha']?.efectivo??100000;
-    document.getElementById('cfgA2').value=lim['Alpha']?.servicio??30000;
+    document.getElementById('cfgP1').value=_LIM['Alpha Premium']?.efectivo??150000;
+    document.getElementById('cfgP2').value=_LIM['Alpha Premium']?.servicio??50000;
+    document.getElementById('cfgA1').value=_LIM['Alpha']?.efectivo??100000;
+    document.getElementById('cfgA2').value=_LIM['Alpha']?.servicio??30000;
     renderRoadTours();
   }
 }
@@ -535,15 +509,15 @@ function renderView(name){
 // ── MEMBER CRUD ───────────────────────────────────────────────
 let currentMemberId=null;
 function openMember(id){
-  const m=getMembers().find(x=>x.id===id);if(!m)return;
+  const m=_M.find(x=>x.id===id);if(!m)return;
   currentMemberId=id;
   document.getElementById('mdTitle').textContent='Miembro #'+m.id;
-  const mu=getMemberUsers().find(u=>u.memberId===id);
+  const mu=_MU.find(u=>u.member_id===id);
   document.getElementById('mdBody').innerHTML=`
     <div class="md-row"><div class="md-item"><div class="md-lbl">Nombre</div><div class="md-val">${m.name}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(m.status)}">${m.status}</span></div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${m.email}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${m.city}</div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Vehículo</div><div class="md-val">${m.vehicle}</div></div><div class="md-item"><div class="md-lbl">Nivel</div><div class="md-val">${m.nivel||'Alpha Premium'}</div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Ingreso</div><div class="md-val">${m.date}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${m.email||'—'}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${m.city||'—'}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Vehículo</div><div class="md-val">${m.vehicle||'—'}</div></div><div class="md-item"><div class="md-lbl">Nivel</div><div class="md-val">${m.nivel||'Alpha Premium'}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Ingreso</div><div class="md-val">${m.date||'—'}</div></div></div>
     <div style="margin-top:20px">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Cambiar Estado</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -554,7 +528,7 @@ function openMember(id){
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Acceso al Portal</div>
       ${mu
-        ? `<div style="display:flex;align-items:center;justify-content:space-between;background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:12px 16px;margin-bottom:10px">
+        ?`<div style="display:flex;align-items:center;justify-content:space-between;background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:12px 16px;margin-bottom:10px">
             <div>
               <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:3px">USUARIO</div>
               <div style="font-size:13px;color:#fff;font-weight:500">${mu.username}</div>
@@ -565,29 +539,35 @@ function openMember(id){
             <button class="btn-sm" onclick="openCreds('${id}')">Editar Credenciales</button>
             <button class="btn-sm-out" onclick="toggleCredActive('${id}')">${mu.active!==false?'Desactivar Acceso':'Activar Acceso'}</button>
           </div>`
-        : `<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:12px">Este miembro no tiene acceso al portal aún.</div>
+        :`<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:12px">Este miembro no tiene acceso al portal aún.</div>
            <button class="btn-sm" onclick="openCreds('${id}')">+ Crear Acceso</button>`
       }
     </div>`;
   openModal('modalMember');
 }
-function changeStatus(id,status){
-  const members=getMembers();const m=members.find(x=>x.id===id);
-  if(m){m.status=status;saveMembers(members);toast('Estado actualizado: '+status);closeModal('modalMember');renderView('members');}
+async function changeStatus(id,status){
+  const {error}=await SB.from('members').update({status}).eq('id',id);
+  if(error){alert('Error al actualizar estado');return;}
+  const m=_M.find(x=>x.id===id);if(m)m.status=status;
+  toast('Estado actualizado: '+status);closeModal('modalMember');renderView('members');
 }
-function deleteMember(){
+async function deleteMember(){
   if(!currentMemberId)return;
   if(!confirm('¿Eliminar este miembro permanentemente?'))return;
-  saveMembers(getMembers().filter(m=>m.id!==currentMemberId));
+  const {error}=await SB.from('members').delete().eq('id',currentMemberId);
+  if(error){alert('Error al eliminar');return;}
+  _M=_M.filter(m=>m.id!==currentMemberId);
   toast('Miembro eliminado');closeModal('modalMember');renderView('members');
 }
 function openAddMember(){openModal('modalAdd');}
-function saveMember(){
+async function saveMember(){
   const name=document.getElementById('aName').value.trim();
   if(!name){alert('El nombre es requerido');return;}
-  const members=getMembers();
-  members.push({id:String(members.length+1).padStart(3,'0'),name,email:document.getElementById('aEmail').value,city:document.getElementById('aCity').value,vehicle:document.getElementById('aVehicle').value,nivel:document.getElementById('aNivel').value,date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:document.getElementById('aStatus').value});
-  saveMembers(members);
+  const newId=String(_M.length+1).padStart(3,'0');
+  const data={id:newId,name,email:document.getElementById('aEmail').value.trim(),city:document.getElementById('aCity').value.trim(),vehicle:document.getElementById('aVehicle').value.trim(),nivel:document.getElementById('aNivel').value,date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:document.getElementById('aStatus').value};
+  const {data:d,error}=await SB.from('members').insert(data).select().single();
+  if(error){alert('Error al guardar: '+error.message);return;}
+  _M.push(d);
   ['aName','aEmail','aCity','aVehicle'].forEach(id=>document.getElementById(id).value='');
   closeModal('modalAdd');toast('Miembro agregado');renderView('members');
 }
@@ -595,7 +575,7 @@ function saveMember(){
 // ── APPLICATIONS ──────────────────────────────────────────────
 let currentAppId=null;
 function openApp(id){
-  const a=getApps().find(x=>x.id===id);if(!a)return;
+  const a=_A.find(x=>x.id===id);if(!a)return;
   currentAppId=id;
   const decided=a.status==='Aprobado'||a.status==='Rechazado';
   document.getElementById('appBody').innerHTML=`
@@ -607,88 +587,74 @@ function openApp(id){
   document.getElementById('appApproveBtn').style.display=decided?'none':'';
   openModal('modalApp');
 }
-function approveApp(){
-  const apps=getApps();const a=apps.find(x=>x.id===currentAppId);if(!a)return;
-  a.status='Aprobado';saveApps(apps);
-  const members=getMembers();
-  const newId=String(members.length+1).padStart(3,'0');
-  members.push({id:newId,name:a.name,email:a.email,city:a.city,vehicle:a.vehicle,nivel:'Alpha Premium',date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:'Activo'});
-  saveMembers(members);
+async function approveApp(){
+  const a=_A.find(x=>x.id===currentAppId);if(!a)return;
+  const {error:e1}=await SB.from('applications').update({status:'Aprobado'}).eq('id',currentAppId);
+  if(e1){alert('Error: '+e1.message);return;}
+  a.status='Aprobado';
+  const newId=String(_M.length+1).padStart(3,'0');
+  const member={id:newId,name:a.name,email:a.email,city:a.city,vehicle:a.vehicle,nivel:'Alpha Premium',date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:'Activo'};
+  const {data:d,error:e2}=await SB.from('members').insert(member).select().single();
+  if(e2){alert('Error al crear miembro: '+e2.message);return;}
+  _M.push(d);
   toast('Solicitud aprobada — miembro #'+newId+' creado');
   closeModal('modalApp');renderView('apps');
-  // Prompt to create portal credentials
   setTimeout(()=>openCreds(newId),400);
 }
-function rejectApp(){
-  const apps=getApps();const a=apps.find(x=>x.id===currentAppId);if(!a)return;
-  a.status='Rechazado';saveApps(apps);
+async function rejectApp(){
+  const a=_A.find(x=>x.id===currentAppId);if(!a)return;
+  const {error}=await SB.from('applications').update({status:'Rechazado'}).eq('id',currentAppId);
+  if(error){alert('Error: '+error.message);return;}
+  a.status='Rechazado';
   toast('Solicitud rechazada');closeModal('modalApp');renderView('apps');
 }
 
 // ── BENEFIT REQUESTS ──────────────────────────────────────────
 let currentBenReqId=null;
 function openBenReq(id){
-  const r=getBenReqs().find(x=>x.id===id);if(!r)return;
+  const r=_BR.find(x=>x.id===id);if(!r)return;
   currentBenReqId=id;
   const decided=r.status==='Aprobado'||r.status==='Rechazado';
-
-  // Build payment details block based on type
   let payBlock='';
-  if(r.tipo==='Beneficio en Efectivo'&&r.payDetails){
-    const pd=r.payDetails;
-    if(r.payMethod==='spei'||pd.clabe){
-      payBlock=`
-        <div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
-          <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Datos de Transferencia SPEI</div>
-          <div class="md-row" style="margin-bottom:8px">
-            <div class="md-item"><div class="md-lbl">CLABE</div><div class="md-val" style="font-family:monospace;letter-spacing:.08em">${pd.clabe||'—'}</div></div>
-            <div class="md-item"><div class="md-lbl">Banco</div><div class="md-val">${pd.banco||'—'}</div></div>
-          </div>
-          ${pd.concepto?`<div class="md-lbl" style="margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${pd.concepto}</div>`:''}
-        </div>`;
-    } else if(r.payMethod==='usdt'||pd.wallet){
-      payBlock=`
-        <div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
-          <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Datos de Pago USDT</div>
-          <div class="md-row" style="margin-bottom:8px">
-            <div class="md-item"><div class="md-lbl">Red Blockchain</div><div class="md-val">${pd.red||'—'}</div></div>
-          </div>
-          <div class="md-lbl" style="margin-bottom:4px">Dirección Wallet</div>
-          <div class="md-val" style="font-family:monospace;font-size:11px;letter-spacing:.04em;color:rgba(255,255,255,.85);word-break:break-all">${pd.wallet||'—'}</div>
-          ${pd.concepto?`<div class="md-lbl" style="margin-top:10px;margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${pd.concepto}</div>`:''}
-        </div>`;
+  if(r.tipo==='Beneficio en Efectivo'&&r.pay_details){
+    const pd=r.pay_details;
+    if(r.pay_method==='spei'||pd.clabe){
+      payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
+        <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Datos de Transferencia SPEI</div>
+        <div class="md-row" style="margin-bottom:8px">
+          <div class="md-item"><div class="md-lbl">CLABE</div><div class="md-val" style="font-family:monospace;letter-spacing:.08em">${pd.clabe||'—'}</div></div>
+          <div class="md-item"><div class="md-lbl">Banco</div><div class="md-val">${pd.banco||'—'}</div></div>
+        </div>
+        ${pd.concepto?`<div class="md-lbl" style="margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${pd.concepto}</div>`:''}</div>`;
+    } else if(r.pay_method==='usdt'||pd.wallet){
+      payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
+        <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Datos de Pago USDT</div>
+        <div class="md-row" style="margin-bottom:8px"><div class="md-item"><div class="md-lbl">Red Blockchain</div><div class="md-val">${pd.red||'—'}</div></div></div>
+        <div class="md-lbl" style="margin-bottom:4px">Dirección Wallet</div>
+        <div class="md-val" style="font-family:monospace;font-size:11px;letter-spacing:.04em;color:rgba(255,255,255,.85);word-break:break-all">${pd.wallet||'—'}</div>
+        ${pd.concepto?`<div class="md-lbl" style="margin-top:10px;margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${pd.concepto}</div>`:''}</div>`;
     }
   } else if(r.tipo==='Crédito de Servicio'){
-    payBlock=`
-      <div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
-        <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Detalle del Servicio</div>
-        <div class="md-row" style="margin-bottom:8px">
-          <div class="md-item"><div class="md-lbl">Socio / Taller</div><div class="md-val">${r.svSocioNombre||r.detalle||'—'}</div></div>
-          <div class="md-item"><div class="md-lbl">Fecha Servicio</div><div class="md-val">${r.svFecha||'—'}</div></div>
-        </div>
-        ${r.svDesc?`<div class="md-lbl" style="margin-bottom:4px">Descripción</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.svDesc}</div>`:''}
-        ${r.notas&&!r.svDesc?`<div class="md-lbl" style="margin-bottom:4px">Notas</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.notas}</div>`:''}
-      </div>`;
+    payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
+      <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Detalle del Servicio</div>
+      <div class="md-row" style="margin-bottom:8px">
+        <div class="md-item"><div class="md-lbl">Socio / Taller</div><div class="md-val">${r.sv_socio_nombre||r.detalle||'—'}</div></div>
+        <div class="md-item"><div class="md-lbl">Fecha Servicio</div><div class="md-val">${r.sv_fecha||'—'}</div></div>
+      </div>
+      ${r.sv_desc?`<div class="md-lbl" style="margin-bottom:4px">Descripción</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.sv_desc}</div>`:''}</div>`;
   } else if(r.tipo==='Road Tour VIP'){
-    payBlock=`
-      <div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
-        <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Detalle Road Tour</div>
-        <div class="md-lbl" style="margin-bottom:4px">Fecha / Ruta</div>
-        <div class="md-val" style="font-size:12px;color:rgba(255,255,255,.85);margin-bottom:10px">${r.detalle||'—'}</div>
-        ${r.notas?`<div class="md-lbl" style="margin-bottom:4px">Notas del miembro</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.notas}</div>`:''}
-      </div>`;
+    payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
+      <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Detalle Road Tour</div>
+      <div class="md-lbl" style="margin-bottom:4px">Fecha / Ruta</div>
+      <div class="md-val" style="font-size:12px;color:rgba(255,255,255,.85);margin-bottom:10px">${r.detalle||'—'}</div>
+      ${r.notas?`<div class="md-lbl" style="margin-bottom:4px">Notas del miembro</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.notas}</div>`:''}</div>`;
   } else if(r.detalle){
     payBlock=`<div class="md-item" style="margin-bottom:16px"><div class="md-lbl">Detalle</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.detalle}</div></div>`;
   }
-
-  // Find member number
-  const memberObj=getMembers().find(m=>m.id===r.memberId);
-
+  const memberObj=_M.find(m=>m.id===r.member_id);
   document.getElementById('benReqBody').innerHTML=`
     <div class="md-row">
-      <div class="md-item">
-        <div class="md-lbl">Miembro</div>
-        <div class="md-val">${r.memberName}</div>
+      <div class="md-item"><div class="md-lbl">Miembro</div><div class="md-val">${r.member_name}</div>
         ${memberObj?`<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">Miembro #${memberObj.id} · ${memberObj.nivel||'Alpha Premium'}</div>`:''}
       </div>
       <div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(r.status)}">${r.status}</span></div></div>
@@ -699,7 +665,7 @@ function openBenReq(id){
     </div>
     ${r.monto?`<div class="md-row"><div class="md-item"><div class="md-lbl">Monto Solicitado</div><div class="md-val" style="font-family:var(--h);font-size:22px;letter-spacing:.04em">${fmtMXN(r.monto)} MXN</div></div></div>`:''}
     ${payBlock}
-    ${r.adminNota&&decided?`<div style="padding:12px 16px;background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.15);margin-top:4px"><div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(46,196,182,.7);margin-bottom:6px">Nota del Admin</div><div style="font-size:12px;color:rgba(255,255,255,.7)">${r.adminNota}</div></div>`:''}
+    ${r.admin_nota&&decided?`<div style="padding:12px 16px;background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.15);margin-top:4px"><div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(46,196,182,.7);margin-bottom:6px">Nota del Admin</div><div style="font-size:12px;color:rgba(255,255,255,.7)">${r.admin_nota}</div></div>`:''}
     ${decided?'':`<div style="margin-top:20px">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Nota de resolución (opcional)</div>
       <textarea id="benReqNota" rows="2" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 12px;font-family:var(--b);font-size:12px;outline:none;resize:vertical" placeholder="Ej. Transferencia procesada el 22 de mayo · Referencia #12345"></textarea>
@@ -708,64 +674,62 @@ function openBenReq(id){
   document.getElementById('benReqApproveBtn').style.display=decided?'none':'';
   openModal('modalBenReq');
 }
-function decideBenReq(decision){
-  const reqs=getBenReqs();const r=reqs.find(x=>x.id===currentBenReqId);if(!r)return;
-  r.status=decision;
+async function decideBenReq(decision){
+  const r=_BR.find(x=>x.id===currentBenReqId);if(!r)return;
   const nota=document.getElementById('benReqNota');
-  if(nota&&nota.value.trim()) r.adminNota=nota.value.trim();
-  saveBenReqs(reqs);
+  const admin_nota=nota?.value.trim()||'';
+  const {error}=await SB.from('benefit_requests').update({status:decision,admin_nota}).eq('id',currentBenReqId);
+  if(error){alert('Error: '+error.message);return;}
+  r.status=decision;r.admin_nota=admin_nota;
   toast(decision==='Aprobado'?'Solicitud aprobada':'Solicitud rechazada');
   closeModal('modalBenReq');renderView('ben-reqs');updateBenCount();
 }
 
-// ── CREDENTIALS ──────────────────────────────────────────────
+// ── CREDENTIALS ───────────────────────────────────────────────
 let credsMemberId=null;
 function openCreds(memberId){
   credsMemberId=memberId;
-  const m=getMembers().find(x=>x.id===memberId);
-  const mu=getMemberUsers().find(u=>u.memberId===memberId);
+  const m=_M.find(x=>x.id===memberId);
+  const mu=_MU.find(u=>u.member_id===memberId);
   document.getElementById('credsTitle').textContent=(mu?'Editar':'Crear')+' Acceso — '+(m?.name||'');
   document.getElementById('crUser').value=mu?.username||'';
   document.getElementById('crPass').value=mu?.password||'';
-  closeModal('modalMember');
-  openModal('modalCreds');
+  closeModal('modalMember');openModal('modalCreds');
 }
 function autoGenCreds(){
-  const m=getMembers().find(x=>x.id===credsMemberId);
-  if(!m)return;
+  const m=_M.find(x=>x.id===credsMemberId);if(!m)return;
   const base=m.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'.');
   document.getElementById('crUser').value=base;
   document.getElementById('crPass').value='Alpha'+Math.floor(1000+Math.random()*9000)+'!';
 }
-function saveCreds(){
+async function saveCreds(){
   const username=document.getElementById('crUser').value.trim().toLowerCase().replace(/\s/g,'');
   const password=document.getElementById('crPass').value.trim();
   if(!username){alert('El usuario es requerido');return;}
   if(password.length<6){alert('La contraseña debe tener al menos 6 caracteres');return;}
-  const users=getMemberUsers();
-  const dup=users.find(u=>u.username===username&&u.memberId!==credsMemberId);
+  const dup=_MU.find(u=>u.username===username&&u.member_id!==credsMemberId);
   if(dup){alert('Ese usuario ya está en uso por otro miembro');return;}
-  const idx=users.findIndex(u=>u.memberId===credsMemberId);
-  if(idx>=0){
-    users[idx]={...users[idx],username,password,active:true};
+  const existing=_MU.find(u=>u.member_id===credsMemberId);
+  if(existing){
+    const {error}=await SB.from('member_users').update({username,password,active:true}).eq('member_id',credsMemberId);
+    if(error){alert('Error: '+error.message);return;}
+    existing.username=username;existing.password=password;existing.active=true;
   } else {
-    users.push({memberId:credsMemberId,username,password,active:true});
+    const {data:d,error}=await SB.from('member_users').insert({member_id:credsMemberId,username,password,active:true}).select().single();
+    if(error){alert('Error: '+error.message);return;}
+    _MU.push(d);
   }
-  saveMemberUsers(users);
-  closeModal('modalCreds');
-  toast('Acceso guardado — usuario: '+username);
-  openMember(credsMemberId);
-  renderView('members');
+  closeModal('modalCreds');toast('Acceso guardado — usuario: '+username);
+  openMember(credsMemberId);renderView('members');
 }
-function toggleCredActive(memberId){
-  const users=getMemberUsers();
-  const idx=users.findIndex(u=>u.memberId===memberId);
-  if(idx<0)return;
-  users[idx].active=!users[idx].active;
-  saveMemberUsers(users);
-  toast(users[idx].active?'Acceso activado':'Acceso desactivado');
-  openMember(memberId);
-  renderView('members');
+async function toggleCredActive(memberId){
+  const mu=_MU.find(u=>u.member_id===memberId);if(!mu)return;
+  const newActive=!mu.active;
+  const {error}=await SB.from('member_users').update({active:newActive}).eq('member_id',memberId);
+  if(error){alert('Error: '+error.message);return;}
+  mu.active=newActive;
+  toast(newActive?'Acceso activado':'Acceso desactivado');
+  openMember(memberId);renderView('members');
 }
 
 // ── SOCIOS ────────────────────────────────────────────────────
@@ -778,7 +742,7 @@ function openAddSocio(){
   openModal('modalSocio');
 }
 function openEditSocio(id){
-  const s=getSocios().find(x=>x.id===id);if(!s)return;
+  const s=_S.find(x=>x.id===id);if(!s)return;
   editSocioId=id;
   document.getElementById('socioModalTitle').textContent='Editar Socio';
   document.getElementById('sNombre').value=s.nombre;
@@ -788,36 +752,37 @@ function openEditSocio(id){
   document.getElementById('sNotas').value=s.notas||'';
   openModal('modalSocio');
 }
-function saveSocio(){
+async function saveSocio(){
   const nombre=document.getElementById('sNombre').value.trim();
   if(!nombre){alert('El nombre es requerido');return;}
-  const socios=getSocios();
-  const data={nombre,categoria:document.getElementById('sCategoria').value,limite:Number(document.getElementById('sLimite').value)||0,contacto:document.getElementById('sContacto').value,notas:document.getElementById('sNotas').value};
+  const data={nombre,categoria:document.getElementById('sCategoria').value,limite:Number(document.getElementById('sLimite').value)||0,contacto:document.getElementById('sContacto').value.trim(),notas:document.getElementById('sNotas').value.trim()};
   if(editSocioId){
-    const idx=socios.findIndex(s=>s.id===editSocioId);
-    if(idx>=0) socios[idx]={...socios[idx],...data};
+    const {error}=await SB.from('socios').update(data).eq('id',editSocioId);
+    if(error){alert('Error: '+error.message);return;}
+    const idx=_S.findIndex(s=>s.id===editSocioId);if(idx>=0)_S[idx]={..._S[idx],...data};
     toast('Socio actualizado correctamente');
   } else {
-    socios.push({id:'s'+Date.now(),...data});
-    toast('Socio agregado correctamente');
+    const newId='s'+Date.now();
+    const {data:d,error}=await SB.from('socios').insert({id:newId,...data}).select().single();
+    if(error){alert('Error: '+error.message);return;}
+    _S.push(d);toast('Socio agregado correctamente');
   }
-  saveSocios(socios);
-  editSocioId=null;
-  closeModal('modalSocio');renderView('socios');
+  editSocioId=null;closeModal('modalSocio');renderView('socios');
 }
-function deleteSocio(id){
+async function deleteSocio(id){
   if(!confirm('¿Eliminar este socio?'))return;
-  saveSocios(getSocios().filter(s=>s.id!==id));
+  const {error}=await SB.from('socios').delete().eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  _S=_S.filter(s=>s.id!==id);
   toast('Socio eliminado');renderView('socios');
 }
 
 // ── ROAD TOURS ────────────────────────────────────────────────
 let editRtId=null;
 function renderRoadTours(){
-  const tours=getRoadTours();
   const el=document.getElementById('roadTourList');
-  if(!tours.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);padding:8px 0">Sin fechas configuradas</div>';return;}
-  el.innerHTML=tours.map(t=>`
+  if(!_RT.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);padding:8px 0">Sin fechas configuradas</div>';return;}
+  el.innerHTML=_RT.map(t=>`
     <div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="flex:1">
         <div style="font-size:12px;color:#fff;margin-bottom:2px">${t.fecha}</div>
@@ -836,7 +801,7 @@ function openAddRoadTour(){
   openModal('modalRoadTour');
 }
 function openEditRoadTour(id){
-  const t=getRoadTours().find(x=>x.id===id);if(!t)return;
+  const t=_RT.find(x=>x.id===id);if(!t)return;
   editRtId=id;
   document.querySelector('#modalRoadTour .modal-title').textContent='Editar Fecha Road Tour';
   document.getElementById('rtFecha').value=t.fecha;
@@ -844,37 +809,42 @@ function openEditRoadTour(id){
   document.getElementById('rtCupo').value=t.cupo;
   openModal('modalRoadTour');
 }
-function saveRoadTour(){
+async function saveRoadTour(){
   const fecha=document.getElementById('rtFecha').value.trim();
   const ruta=document.getElementById('rtRuta').value.trim();
   if(!fecha||!ruta){alert('Fecha y ruta son requeridos');return;}
-  const tours=getRoadTours();
   const cupo=Number(document.getElementById('rtCupo').value)||20;
   if(editRtId){
-    const idx=tours.findIndex(t=>t.id===editRtId);
-    if(idx>=0) tours[idx]={...tours[idx],fecha,ruta,cupo};
+    const {error}=await SB.from('road_tours').update({fecha,ruta,cupo}).eq('id',editRtId);
+    if(error){alert('Error: '+error.message);return;}
+    const idx=_RT.findIndex(t=>t.id===editRtId);if(idx>=0)_RT[idx]={..._RT[idx],fecha,ruta,cupo};
     toast('Fecha actualizada');
   } else {
-    tours.push({id:'rt'+Date.now(),fecha,ruta,cupo,inscritos:0});
-    toast('Fecha agregada');
+    const newId='rt'+Date.now();
+    const {data:d,error}=await SB.from('road_tours').insert({id:newId,fecha,ruta,cupo,inscritos:0}).select().single();
+    if(error){alert('Error: '+error.message);return;}
+    _RT.push(d);toast('Fecha agregada');
   }
-  saveRoadTours(tours);
-  editRtId=null;
-  closeModal('modalRoadTour');renderRoadTours();
+  editRtId=null;closeModal('modalRoadTour');renderRoadTours();
 }
-function deleteRoadTour(id){
+async function deleteRoadTour(id){
   if(!confirm('¿Eliminar esta fecha?'))return;
-  saveRoadTours(getRoadTours().filter(t=>t.id!==id));
+  const {error}=await SB.from('road_tours').delete().eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  _RT=_RT.filter(t=>t.id!==id);
   toast('Fecha eliminada');renderRoadTours();
 }
 
 // ── LIMITS ────────────────────────────────────────────────────
-function saveLimites(){
+async function saveLimites(){
   const lim={
     'Alpha Premium':{efectivo:Number(document.getElementById('cfgP1').value),servicio:Number(document.getElementById('cfgP2').value)},
     'Alpha':{efectivo:Number(document.getElementById('cfgA1').value),servicio:Number(document.getElementById('cfgA2').value)},
   };
-  saveLimitesData(lim);toast('Límites guardados correctamente');
+  const upserts=Object.entries(lim).map(([nivel,vals])=>({nivel,...vals}));
+  const {error}=await SB.from('config_limites').upsert(upserts,{onConflict:'nivel'});
+  if(error){alert('Error al guardar: '+error.message);return;}
+  _LIM=lim;toast('Límites guardados correctamente');
 }
 
 // ── MODAL UTILS ───────────────────────────────────────────────
@@ -883,8 +853,14 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
 // ── INIT ──────────────────────────────────────────────────────
-renderView('dashboard');
-updateBenCount();
+loadAll().then(()=>{
+  renderView('dashboard');
+  updateBenCount();
+}).catch(err=>{
+  console.error('Error loading data:',err);
+  document.getElementById('pageTitle').textContent='Error de conexión';
+  document.getElementById('pageSub').textContent='No se pudo conectar con la base de datos. Verifica tu conexión.';
+});
 </script>
 </body>
 </html>

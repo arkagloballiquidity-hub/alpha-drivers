@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ALPHA DRIVERS — Acceso</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--h:'Bebas Neue',sans-serif;--b:'Inter',sans-serif;--ease:cubic-bezier(.22,1,.36,1);--red:#e63946}
@@ -79,9 +80,14 @@ body{background:#080808;color:#fff;font-family:var(--b);min-height:100vh;display
 </div>
 
 <script>
+const SB=supabase.createClient(
+  'https://fggchwkbvelqiofkojqn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
+);
+
 document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
-function doLogin() {
+async function doLogin() {
   const user = document.getElementById('user').value.trim().toLowerCase();
   const pass = document.getElementById('pass').value;
   const btn  = document.getElementById('loginBtn');
@@ -95,23 +101,30 @@ function doLogin() {
     localStorage.setItem('ad_role', 'admin');
     localStorage.setItem('ad_user', 'admin');
     localStorage.setItem('ad_session', Date.now());
-    setTimeout(() => { location.href = 'admin.html'; }, 700);
+    setTimeout(() => { location.href = '/admin'; }, 700);
     return;
   }
 
-  // Member credentials from localStorage
-  const memberUsers = JSON.parse(localStorage.getItem('ad_member_users') || '[]');
-  const mu = memberUsers.find(u => u.username === user && u.password === pass && u.active !== false);
-  if (mu) {
-    btn.classList.add('loading'); btn.disabled = true;
+  // Member credentials from Supabase
+  btn.classList.add('loading'); btn.disabled = true;
+  const { data: mu, error } = await SB
+    .from('member_users')
+    .select('*')
+    .eq('username', user)
+    .eq('password', pass)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (mu && !error) {
     localStorage.setItem('ad_role', 'member');
     localStorage.setItem('ad_user', user);
-    localStorage.setItem('ad_member_id', mu.memberId);
+    localStorage.setItem('ad_member_id', mu.member_id);
     localStorage.setItem('ad_session', Date.now());
-    setTimeout(() => { location.href = 'portal.html'; }, 700);
+    setTimeout(() => { location.href = '/portal'; }, 700);
     return;
   }
 
+  btn.classList.remove('loading'); btn.disabled = false;
   err.classList.add('show');
   document.getElementById('pass').value = '';
 }

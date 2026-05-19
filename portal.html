@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ALPHA DRIVERS — Mi Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--h:'Bebas Neue',sans-serif;--b:'Inter',sans-serif;--green:#2ec4b6;--amber:#f4a261;--red:#e63946}
@@ -514,74 +515,48 @@ tr:last-child td{border-bottom:none}
 <div class="toast" id="toastEl"></div>
 
 <script>
+// ── SUPABASE ──────────────────────────────────────────────────
+const SB=supabase.createClient(
+  'https://fggchwkbvelqiofkojqn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
+);
+
 // ── SESSION ───────────────────────────────────────────────────
+const _MEMBER_ID=localStorage.getItem('ad_member_id');
 (function(){
   if(localStorage.getItem('ad_role')!=='member') location.replace('/login?role=member');
 })();
 
-// ── DATA HELPERS ──────────────────────────────────────────────
-const DEFAULT_MEMBER={nombre:'Miembro Alpha',email:'',nivel:'Alpha Premium',numero:'001',ingreso:'Enero 2025',status:'Activo'};
-const SEED_MEMBERS=[
-  {id:'001',name:'Carlos Mendoza',email:'carlos@email.com',city:'Ciudad de México',vehicle:'Porsche 911 GT3RS',nivel:'Alpha Premium',date:'Ene 2025',status:'Activo'},
-  {id:'002',name:'Ricardo Fuentes',email:'rfuentes@email.com',city:'Guadalajara',vehicle:'Ferrari F8 Tributo',nivel:'Alpha Premium',date:'Feb 2025',status:'Activo'},
-  {id:'003',name:'Alejandro Torres',email:'atores@email.com',city:'Monterrey',vehicle:'McLaren 720S',nivel:'Alpha',date:'Mar 2025',status:'Pago Pendiente'},
-  {id:'004',name:'Jorge Villanueva',email:'jvilla@email.com',city:'Ciudad de México',vehicle:'Lamborghini Huracán',nivel:'Alpha Premium',date:'Abr 2025',status:'Activo'},
-];
-function getMembers(){
-  try{
-    const s=localStorage.getItem('ad_members');
-    return s?JSON.parse(s):JSON.parse(JSON.stringify(SEED_MEMBERS));
-  }catch(e){return JSON.parse(JSON.stringify(SEED_MEMBERS));}
+// ── IN-MEMORY CACHE ───────────────────────────────────────────
+let _member=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[];
+
+async function loadAll(){
+  const [memberRes,sociosRes,rtRes,limRes,reqsRes]=await Promise.all([
+    SB.from('members').select('*').eq('id',_MEMBER_ID).single(),
+    SB.from('socios').select('*').order('nombre'),
+    SB.from('road_tours').select('*'),
+    SB.from('config_limites').select('*'),
+    SB.from('benefit_requests').select('*').eq('member_id',_MEMBER_ID).order('created_at',{ascending:false}),
+  ]);
+  _member=memberRes.data;
+  _socios=sociosRes.data||[];
+  _roadTours=rtRes.data||[];
+  if(limRes.data?.length){_limites={};limRes.data.forEach(l=>{_limites[l.nivel]={efectivo:Number(l.efectivo),servicio:Number(l.servicio)};});}
+  _myReqs=reqsRes.data||[];
 }
-function getMember(){
-  const memberId=localStorage.getItem('ad_member_id');
-  const members=getMembers();
-  if(memberId){
-    const found=members.find(m=>m.id===memberId);
-    if(found) return found;
-  }
-  // fallback: first active member
-  return members.find(m=>m.status==='Activo')||members[0]||DEFAULT_MEMBER;
-}
-function getSocios(){
-  const seed=[
-    {id:'s1',nombre:'Porsche Service Center CDMX',categoria:'Taller Oficial',limite:50000},
-    {id:'s2',nombre:'Ferrari Maserati México',categoria:'Taller Oficial',limite:50000},
-    {id:'s3',nombre:'AutoDetail Elite Polanco',categoria:'Detailing & Estética',limite:15000},
-    {id:'s4',nombre:'Taller McLaren México',categoria:'Taller Oficial',limite:50000},
-    {id:'s5',nombre:'Sushi Ammo Polanco',categoria:'Restaurante',limite:5000},
-    {id:'s6',nombre:'Hyatt Regency CDMX',categoria:'Hospedaje',limite:20000},
-  ];
-  return JSON.parse(localStorage.getItem('ad_socios')||'null')||seed;
-}
-function getRoadTours(){
-  const seed=[
-    {id:'rt1',fecha:'14-15 Jun 2025',ruta:'CDMX → Guadalajara',cupo:20,inscritos:12},
-    {id:'rt2',fecha:'19-20 Jul 2025',ruta:'CDMX → Valle de Bravo',cupo:20,inscritos:6},
-    {id:'rt3',fecha:'23-24 Ago 2025',ruta:'CDMX → Oaxaca',cupo:20,inscritos:2},
-  ];
-  return JSON.parse(localStorage.getItem('ad_road_tours')||'null')||seed;
-}
-function getLimites(){
-  const def={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}};
-  return JSON.parse(localStorage.getItem('ad_limites')||'null')||def;
-}
-function getBenReqs(){return JSON.parse(localStorage.getItem('ad_benefit_requests')||'[]');}
-function saveBenReqs(d){localStorage.setItem('ad_benefit_requests',JSON.stringify(d));}
-function myReqs(){
-  const m=getMember();
-  const name=m.name||m.nombre;
-  const id=m.id||m.numero;
-  return getBenReqs().filter(r=>r.memberId===id||(name&&r.memberName===name));
-}
+
+function getMember(){return _member||{id:'001',name:'Miembro Alpha',nivel:'Alpha Premium',status:'Activo',date:'Enero 2025',city:'',vehicle:'',email:''};}
+function getSocios(){return _socios;}
+function getRoadTours(){return _roadTours;}
+function getLimites(){return _limites;}
+function myReqs(){return _myReqs;}
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
 
-// Crédito de servicio usado por este miembro
 function servicioUsado(){
-  return myReqs().filter(r=>r.tipo==='Crédito de Servicio'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
+  return _myReqs.filter(r=>r.tipo==='Crédito de Servicio'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
 }
 function efectivoUsado(){
-  return myReqs().filter(r=>r.tipo==='Beneficio en Efectivo'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
+  return _myReqs.filter(r=>r.tipo==='Beneficio en Efectivo'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
 }
 
 // ── BENEFITS CONFIG ───────────────────────────────────────────
@@ -682,7 +657,7 @@ function render(){
 }
 
 function renderSolicitudes(){
-  const reqs=myReqs().slice().reverse();
+  const reqs=myReqs();
   document.getElementById('solBody').innerHTML=reqs.length?reqs.map(r=>`
     <tr>
       <td>${r.tipo}</td>
@@ -690,7 +665,7 @@ function renderSolicitudes(){
       <td>${r.monto?fmtMXN(r.monto):'-'}</td>
       <td style="font-size:11px">${r.fecha}</td>
       <td><span class="status ${stClass(r.status)}">${r.status}</span></td>
-      <td style="font-size:11px;color:rgba(255,255,255,.4)">${r.adminNota||'—'}</td>
+      <td style="font-size:11px;color:rgba(255,255,255,.4)">${r.admin_nota||'—'}</td>
     </tr>`).join('')
     :'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes realizadas — usa el botón "Solicitar" en cada beneficio</td></tr>';
 }
@@ -793,8 +768,7 @@ function updateSvBar(){
 }
 
 // ── SUBMIT BENEFIT ────────────────────────────────────────────
-function submitBenefit(tipo){
-  const m=getMember();
+async function submitBenefit(tipo){
   let detalle='', monto=null, notas='';
 
   if(tipo==='Road Tour VIP'){
@@ -838,27 +812,26 @@ function submitBenefit(tipo){
     notas=document.getElementById('svDesc').value.trim()+' · Fecha: '+document.getElementById('svFecha').value;
   }
 
-  const reqs=getBenReqs();
+  const m=getMember();
   const req={
     id:'br'+Date.now(),
-    memberId:m.id||m.numero||'001',
-    memberName:m.name||m.nombre||'Miembro Alpha',
+    member_id:m.id||'001',
+    member_name:m.name||'Miembro Alpha',
     tipo,detalle,monto,notas,
     status:'Pendiente',
     fecha:new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}),
-    adminNota:'',
+    admin_nota:'',
   };
-  // Guardar detalles completos de pago para el admin
   if(tipo==='Beneficio en Efectivo'){
-    req.payMethod=_payMethod;
+    req.pay_method=_payMethod;
     if(_payMethod==='spei'){
-      req.payDetails={
+      req.pay_details={
         clabe:document.getElementById('efClabe').value.trim(),
         banco:document.getElementById('efBanco').value,
         concepto:document.getElementById('efConcepto').value.trim(),
       };
     } else {
-      req.payDetails={
+      req.pay_details={
         wallet:document.getElementById('efWallet').value.trim(),
         red:document.getElementById('efRed').value,
         concepto:document.getElementById('efConcepto').value.trim(),
@@ -866,15 +839,15 @@ function submitBenefit(tipo){
     }
   }
   if(tipo==='Crédito de Servicio'){
-    req.svFecha=document.getElementById('svFecha').value;
-    req.svDesc=document.getElementById('svDesc').value.trim();
+    req.sv_fecha=document.getElementById('svFecha').value;
+    req.sv_desc=document.getElementById('svDesc').value.trim();
     const sel=document.getElementById('svSocio');
-    req.svSocioNombre=sel.options[sel.selectedIndex]?.text?.split(' — ')[0]||'';
+    req.sv_socio_nombre=sel.options[sel.selectedIndex]?.text?.split(' — ')[0]||'';
   }
-  reqs.push(req);
-  saveBenReqs(reqs);
+  const {data:d,error}=await SB.from('benefit_requests').insert(req).select().single();
+  if(error){alert('Error al enviar: '+error.message);return;}
+  _myReqs.unshift(d||req);
 
-  // Close all modals
   document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
   toast('Solicitud enviada — te notificaremos cuando sea procesada');
   render();
@@ -932,7 +905,13 @@ function logout(){
 }
 
 // ── INIT ──────────────────────────────────────────────────────
-render();
+loadAll().then(()=>{
+  render();
+}).catch(err=>{
+  console.error('Error loading data:',err);
+  document.getElementById('memberName').textContent='Error de conexión';
+  document.getElementById('memberMeta').textContent='No se pudo cargar tu información. Intenta recargar la página.';
+});
 </script>
 </body>
 </html>
