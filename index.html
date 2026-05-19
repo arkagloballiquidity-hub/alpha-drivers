@@ -609,8 +609,8 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   </div>
 </div>
 
-<!-- FORM -->
-<section id="form">
+<!-- FORM (hidden until invite code validated) -->
+<section id="form" style="display:none">
   <div class="fi">
     <p class="slbl" data-i18n="form.slbl">Apply</p>
     <h2 class="sh2" data-i18n-html="form.sh2">Enter<br>the Grid</h2>
@@ -1119,8 +1119,11 @@ function showInviteErr(msg) {
 function scrollToForm() {
   const formEl = document.getElementById('form');
   if (!formEl) return;
-  if (window.lenis) window.lenis.scrollTo(formEl, { duration: 1.2 });
-  else formEl.scrollIntoView({ behavior: 'smooth' });
+  formEl.style.display = 'block';
+  setTimeout(() => {
+    if (window.lenis) window.lenis.scrollTo(formEl, { duration: 1.2 });
+    else formEl.scrollIntoView({ behavior: 'smooth' });
+  }, 60);
 }
 </script>
 </body>
