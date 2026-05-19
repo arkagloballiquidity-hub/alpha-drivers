@@ -179,6 +179,14 @@ tr:last-child td{border-bottom:none}
       <svg viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h10M3 15h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Mis Solicitudes
     </button>
+    <button class="sb-link" onclick="showView('perfil',this)">
+      <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Mi Perfil
+    </button>
+    <button class="sb-link" onclick="showView('fotos',this)">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="13" rx="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="10.5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 8h2.5L6 6h8l1.5 2H18" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Mis Fotos
+    </button>
     <button class="sb-link" onclick="showView('documentos',this)">
       <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Mis Documentos
@@ -290,6 +298,38 @@ tr:last-child td{border-bottom:none}
     </div>
 
     <!-- MIS DOCUMENTOS -->
+    <!-- MI PERFIL -->
+    <div class="view" id="view-perfil">
+      <div class="sec-hd"><div class="section-title" style="margin:0">Mi Perfil</div></div>
+      <div style="background:#111;border:1px solid rgba(255,255,255,.07);padding:28px 32px;margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:24px;margin-bottom:28px;flex-wrap:wrap">
+          <div id="avatarPreview" style="width:80px;height:80px;border-radius:50%;background:#0d0d0d;border:1px solid rgba(255,255,255,.12);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            <svg width="32" height="32" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="rgba(255,255,255,.3)" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="rgba(255,255,255,.3)" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:8px">Foto de perfil (máx. 2 MB)</div>
+            <input type="file" id="avatarFile" accept="image/*" onchange="onAvatarSelect(this)" style="font-size:10px;color:rgba(255,255,255,.5)"/>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="mfield"><label>Nombre completo</label><input type="text" id="pfName" class="minput" placeholder="Tu nombre"/></div>
+          <div class="mfield"><label>Teléfono</label><input type="text" id="pfPhone" class="minput" placeholder="+52 55 0000 0000"/></div>
+          <div class="mfield"><label>Ciudad</label><input type="text" id="pfCity" class="minput" placeholder="Ciudad de México"/></div>
+          <div class="mfield"><label>Vehículo principal</label><input type="text" id="pfVehicle" class="minput" placeholder="Porsche 911, etc."/></div>
+        </div>
+        <div class="mfield" style="margin-bottom:20px"><label>Bio (opcional)</label><textarea id="pfBio" rows="3" class="minput" style="resize:vertical" placeholder="Cuéntanos sobre ti, tu pasión por los autos…"></textarea></div>
+        <button class="btn-solicitar" onclick="saveProfile()">Guardar Cambios</button>
+      </div>
+    </div>
+
+    <!-- MIS FOTOS -->
+    <div class="view" id="view-fotos">
+      <div class="sec-hd"><div class="section-title" style="margin:0">Mis Fotos de Eventos</div></div>
+      <div id="fotosGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+        <div style="text-align:center;color:rgba(255,255,255,.3);padding:48px;font-size:12px;grid-column:1/-1">Cargando fotos…</div>
+      </div>
+    </div>
+
     <div class="view" id="view-documentos">
       <div class="sec-hd">
         <div class="section-title" style="margin:0">Mis Documentos</div>
@@ -647,11 +687,12 @@ const _MEMBER_ID=localStorage.getItem('ad_member_id');
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
 let _member=null,_memberUser=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[],
     _myDocs=[],_myPayments=[],_myReferrals=[],_reqDocs=[],_cfgGeneral={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
+    _myPhotos=[],
     _cc={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
 
 async function loadAll(){
   const adUser=localStorage.getItem('ad_user');
-  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes,rdocsRes,cgenRes]=await Promise.all([
+  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes,rdocsRes,cgenRes,photosRes]=await Promise.all([
     SB.from('members').select('*').eq('id',_MEMBER_ID).single(),
     SB.from('member_users').select('*').eq('member_id',_MEMBER_ID).maybeSingle(),
     SB.from('socios').select('*').order('nombre'),
@@ -664,6 +705,7 @@ async function loadAll(){
     SB.from('invite_codes').select('id,code,used,used_by,created_at,referred_name,referred_email').eq('referred_by',_MEMBER_ID).order('created_at',{ascending:false}),
     SB.from('config_required_docs').select('*').eq('activo',true).order('orden'),
     SB.from('config_general').select('*'),
+    SB.from('event_photos').select('id,event_name,title,file_data,file_type,uploaded_at').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
   ]);
   _member=memberRes.data;
   _memberUser=muRes.data||null;
@@ -675,6 +717,7 @@ async function loadAll(){
   _myPayments=paymentsRes.data||[];
   _myReferrals=refRes.data||[];
   _reqDocs=rdocsRes.data||[];
+  _myPhotos=photosRes.data||[];
   if(cgenRes.data?.length){cgenRes.data.forEach(r=>{_cfgGeneral[r.key]=r.value;});}
   if(ccRes.data?.length){ccRes.data.forEach(r=>{_cc[r.key]=r.value;});}
   const eEl=document.getElementById('ccEmail');const wEl=document.getElementById('ccWhatsapp');const hEl=document.getElementById('ccHorario');
@@ -749,6 +792,69 @@ function getBenData(){
 function fmtDate(iso){
   if(!iso)return'—';
   return new Date(iso).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+}
+// ── PROFILE ──────────────────────────────────────────────────
+function renderProfile(){
+  const m=getMember();
+  const nameEl=document.getElementById('pfName');
+  const phoneEl=document.getElementById('pfPhone');
+  const cityEl=document.getElementById('pfCity');
+  const vehicleEl=document.getElementById('pfVehicle');
+  const bioEl=document.getElementById('pfBio');
+  if(nameEl)nameEl.value=m.name||m.nombre||'';
+  if(phoneEl)phoneEl.value=m.phone||'';
+  if(cityEl)cityEl.value=m.city||'';
+  if(vehicleEl)vehicleEl.value=m.vehicle||'';
+  if(bioEl)bioEl.value=m.bio||'';
+  if(m.avatar_data){
+    const av=document.getElementById('avatarPreview');
+    if(av)av.innerHTML=`<img src="${m.avatar_data}" style="width:80px;height:80px;object-fit:cover;border-radius:50%"/>`;
+  }
+}
+function onAvatarSelect(input){
+  const f=input.files[0];if(!f)return;
+  if(f.size>2*1024*1024){toast('La imagen debe ser menor a 2 MB');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const av=document.getElementById('avatarPreview');
+    if(av)av.innerHTML=`<img src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:50%"/>`;
+  };
+  reader.readAsDataURL(f);
+}
+async function saveProfile(){
+  const name=document.getElementById('pfName').value.trim();
+  const phone=document.getElementById('pfPhone').value.trim();
+  const city=document.getElementById('pfCity').value.trim();
+  const vehicle=document.getElementById('pfVehicle').value.trim();
+  const bio=document.getElementById('pfBio').value.trim();
+  const avatarFile=document.getElementById('avatarFile').files[0];
+  let updates={name,phone,city,vehicle,bio};
+  if(avatarFile){
+    const b64=await fileToBase64(avatarFile);
+    updates.avatar_data=b64;
+  }
+  const {error}=await SB.from('members').update(updates).eq('id',_MEMBER_ID);
+  if(error){toast('Error: '+error.message);return;}
+  if(_member)Object.assign(_member,updates);
+  document.getElementById('memberName').textContent=name||'Miembro Alpha';
+  document.getElementById('avatarFile').value='';
+  toast('Perfil actualizado');
+}
+// ── FOTOS GALLERY ────────────────────────────────────────────
+function renderFotos(){
+  const el=document.getElementById('fotosGallery');if(!el)return;
+  if(!_myPhotos.length){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:48px;font-size:12px;grid-column:1/-1">Aún no hay fotos de eventos. Próximamente verás aquí las fotos de tus autos en cada evento.</div>';return;}
+  el.innerHTML=_myPhotos.map(p=>`
+    <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.07);overflow:hidden">
+      <div style="aspect-ratio:4/3;overflow:hidden;background:#111">
+        <img src="${p.file_data}" alt="${p.title||p.event_name||'Foto'}" style="width:100%;height:100%;object-fit:cover"/>
+      </div>
+      <div style="padding:12px 14px">
+        ${p.event_name?`<div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px">${p.event_name}</div>`:''}
+        ${p.title?`<div style="font-size:12px;color:#fff;font-weight:500">${p.title}</div>`:''}
+        <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px">${fmtDate(p.uploaded_at)}</div>
+      </div>
+    </div>`).join('');
 }
 function renderDocs(){
   const el=document.getElementById('docsList');
@@ -992,10 +1098,11 @@ function render(){
   const m=getMember();
   const bens=getBenData();
 
-  document.getElementById('sbBadge').textContent='Miembro #'+(m.id||m.numero||'001');
-  document.getElementById('topMemberNum').textContent='Miembro #'+(m.id||m.numero||'001');
+  const numDisplay=m.numero||m.id||'001';
+  document.getElementById('sbBadge').textContent='Miembro #'+numDisplay;
+  document.getElementById('topMemberNum').textContent='Miembro #'+numDisplay;
   document.getElementById('memberName').textContent=m.name||m.nombre||'Miembro Alpha';
-  document.getElementById('memberNumLarge').textContent=m.id||m.numero||'001';
+  document.getElementById('memberNumLarge').textContent=numDisplay;
   document.getElementById('memberMeta').textContent=(m.nivel||'Alpha Premium')+' · Miembro activo desde '+(m.date||m.ingreso||'Enero 2025');
 
   const panelEstado=document.getElementById('panelEstado');
@@ -1098,6 +1205,8 @@ function stClass(s){
 // ── VIEWS ─────────────────────────────────────────────────────
 const VIEW_META={
   panel:['Bienvenido','Tu membresía Alpha Drivers'],
+  perfil:['Mi Perfil','Edita tu información personal y foto'],
+  fotos:['Mis Fotos de Eventos','Galería de tus autos en eventos exclusivos'],
   beneficios:['Mis Beneficios','Ciclo 2025 — Beneficios activos'],
   solicitudes:['Mis Solicitudes','Historial de solicitudes de beneficios'],
   documentos:['Mis Documentos','Sube y gestiona tus documentos'],
@@ -1115,6 +1224,8 @@ function showView(id,btn){
   const meta=VIEW_META[id]||['',''];
   document.getElementById('pageTitle').textContent=meta[0];
   document.getElementById('pageSub').textContent=meta[1];
+  if(id==='perfil') renderProfile();
+  if(id==='fotos') renderFotos();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='documentos') renderDocs();
   if(id==='pago') renderPayments();

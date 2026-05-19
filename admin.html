@@ -504,10 +504,11 @@ function logout(){localStorage.removeItem('ad_role');localStorage.removeItem('ad
 let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_STAFF=[],_PAGOS=[],_DOCS=[],_ICODES=[],
     _LIM={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},
     _CC={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'},
-    _REQ_DOCS=[],_CFG_GENERAL={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'};
+    _REQ_DOCS=[],_CFG_GENERAL={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
+    _EPHOTOS=[];
 
 async function loadAll(){
-  const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes,rdocs,cgen]=await Promise.all([
+  const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes,rdocs,cgen,ephotos]=await Promise.all([
     SB.from('members').select('*').order('created_at'),
     SB.from('member_users').select('*'),
     SB.from('applications').select('*').order('created_at',{ascending:false}),
@@ -522,10 +523,12 @@ async function loadAll(){
     SB.from('invite_codes').select('*').order('created_at',{ascending:false}),
     SB.from('config_required_docs').select('*').order('orden'),
     SB.from('config_general').select('*'),
+    SB.from('event_photos').select('id,member_id,member_name,event_name,title,file_type,uploaded_at').order('uploaded_at',{ascending:false}),
   ]);
   _M=m.data||[];_MU=mu.data||[];_A=a.data||[];_S=s.data||[];_RT=rt.data||[];_BR=br.data||[];_STAFF=staff.data||[];
   _PAGOS=pagos.data||[];_DOCS=docs.data||[];_ICODES=icodes.data||[];
   _REQ_DOCS=rdocs.data||[];
+  _EPHOTOS=ephotos.data||[];
   if(cgen.data?.length){cgen.data.forEach(r=>{_CFG_GENERAL[r.key]=r.value;});}
   if(lim.data?.length){_LIM={};lim.data.forEach(l=>{_LIM[l.nivel]={efectivo:Number(l.efectivo),servicio:Number(l.servicio)};});}
   if(cc.data?.length){cc.data.forEach(r=>{_CC[r.key]=r.value;});}
@@ -614,7 +617,7 @@ function renderView(name){
         :`<button class="tbl-action" onclick="event.stopPropagation();openCreds('${m.id}')">+ Crear</button>`;
       const inactive=m.status==='Inactivo';
       return `<tr class="clickable" onclick="openMember('${m.id}')" style="${inactive?'opacity:.4;':''}">
-        <td>${m.id}</td><td>${m.name}</td><td>${m.city}</td><td>${m.vehicle}</td><td>${m.date}</td>
+        <td>${m.numero||m.id}</td><td>${m.name}</td><td>${m.city}</td><td>${m.vehicle}</td><td>${m.date}</td>
         <td><span class="status ${statusClass(m.status)}">${m.status}</span></td>
         <td>${portalBadge}</td>
         <td><button class="tbl-action" onclick="event.stopPropagation();openMember('${m.id}')">Ver →</button></td>
@@ -713,14 +716,21 @@ let currentMemberId=null;
 function openMember(id){
   const m=_M.find(x=>x.id===id);if(!m)return;
   currentMemberId=id;
-  document.getElementById('mdTitle').textContent='Miembro #'+m.id;
+  document.getElementById('mdTitle').textContent='Miembro #'+(m.numero||m.id);
   const mu=_MU.find(u=>u.member_id===id);
   document.getElementById('mdBody').innerHTML=`
     <div class="md-row"><div class="md-item"><div class="md-lbl">Nombre</div><div class="md-val">${m.name}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(m.status)}">${m.status}</span></div></div></div>
     <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${m.email||'—'}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${m.city||'—'}</div></div></div>
     <div class="md-row"><div class="md-item"><div class="md-lbl">Vehículo</div><div class="md-val">${m.vehicle||'—'}</div></div><div class="md-item"><div class="md-lbl">Nivel</div><div class="md-val">${m.nivel||'Alpha Premium'}</div></div></div>
     <div class="md-row"><div class="md-item"><div class="md-lbl">Ingreso</div><div class="md-val">${m.date||'—'}</div></div></div>
-    <div style="margin-top:20px">
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Número de Miembro</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input type="text" id="mdNumero" value="${m.numero||m.id}" style="width:120px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:13px;font-weight:600;outline:none;letter-spacing:.1em"/>
+        <button class="btn-sm" onclick="saveNumero('${id}')">Guardar</button>
+      </div>
+    </div>
+    <div style="margin-top:16px">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Cambiar Estado</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-sm" onclick="changeStatus('${id}','Activo')">Activo</button>
@@ -752,11 +762,41 @@ function openMember(id){
         :`<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:12px">Este miembro no tiene acceso al portal aún.</div>
            <button class="btn-sm" onclick="openCreds('${id}')">+ Crear Acceso</button>`
       }
+    </div>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Fotos de Eventos</div>
+      <div id="mdPhotosWrap" style="margin-bottom:12px"></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:6px">Evento</div>
+          <input type="text" id="mdPhotoEvent" placeholder="Nombre del evento" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none;width:160px"/>
+        </div>
+        <div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:6px">Descripción</div>
+          <input type="text" id="mdPhotoTitle" placeholder="Descripción (opcional)" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none;width:160px"/>
+        </div>
+        <div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:6px">Imagen</div>
+          <input type="file" id="mdPhotoFile" accept="image/*" style="font-size:10px;color:rgba(255,255,255,.5)"/>
+        </div>
+        <button class="btn-sm" onclick="uploadEventPhoto('${id}','${m.name}')">Subir Foto</button>
+      </div>
     </div>`;
+  renderMemberPhotos(id);
   const isInactive=m.status==='Inactivo';
   document.getElementById('mdDeactivateBtn').style.display=isInactive?'none':'';
   document.getElementById('mdReactivateBtn').style.display=isInactive?'':'none';
   openModal('modalMember');
+}
+async function saveNumero(id){
+  const val=(document.getElementById('mdNumero').value||'').trim();
+  if(!val){toast('El número de miembro no puede estar vacío');return;}
+  const dup=_M.find(x=>x.id!==id&&(x.numero||x.id)===val);
+  if(dup){toast('Ese número ya está en uso por otro miembro');return;}
+  const {error}=await SB.from('members').update({numero:val}).eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  const m=_M.find(x=>x.id===id);if(m)m.numero=val;
+  toast('Número de miembro actualizado a #'+val);openMember(id);renderView('members');
 }
 async function saveBenStart(id){
   const val=document.getElementById('mdBenStart').value||null;
@@ -793,13 +833,53 @@ async function reactivateMember(){
   const mu=_MU.find(u=>u.member_id===currentMemberId);if(mu)mu.active=true;
   toast('Miembro reactivado');closeModal('modalMember');renderView('members');
 }
+// ── EVENT PHOTOS ─────────────────────────────────────────────
+function renderMemberPhotos(memberId){
+  const el=document.getElementById('mdPhotosWrap');if(!el)return;
+  const photos=_EPHOTOS.filter(p=>p.member_id===memberId);
+  if(!photos.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:8px">Sin fotos subidas aún</div>';return;}
+  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">`+
+    photos.map(p=>`<div style="position:relative;width:72px;height:72px">
+      <div style="width:72px;height:72px;background:#111;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:9px;color:rgba(255,255,255,.3)">${p.event_name||p.title||'Foto'}</div>
+      <button onclick="deleteEventPhoto('${p.id}','${memberId}')" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--red);border:none;color:#fff;font-size:10px;cursor:pointer;line-height:16px;text-align:center;border-radius:50%">×</button>
+    </div>`).join('')+`</div>`;
+}
+async function uploadEventPhoto(memberId,memberName){
+  const file=document.getElementById('mdPhotoFile').files[0];
+  const event_name=document.getElementById('mdPhotoEvent').value.trim();
+  const title=document.getElementById('mdPhotoTitle').value.trim();
+  if(!file){toast('Selecciona una imagen');return;}
+  if(file.size>5*1024*1024){toast('La imagen debe ser menor a 5 MB');return;}
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const file_data=e.target.result;
+    const id='ep'+Date.now();
+    const {data,error}=await SB.from('event_photos').insert({id,member_id:memberId,member_name:memberName,event_name,title,file_data,file_type:file.type,uploaded_at:new Date().toISOString()}).select('id,member_id,member_name,event_name,title,file_type,uploaded_at').single();
+    if(error){toast('Error: '+error.message);return;}
+    _EPHOTOS.unshift(data);
+    document.getElementById('mdPhotoFile').value='';
+    document.getElementById('mdPhotoEvent').value='';
+    document.getElementById('mdPhotoTitle').value='';
+    renderMemberPhotos(memberId);toast('Foto subida');
+  };
+  reader.readAsDataURL(file);
+}
+async function deleteEventPhoto(photoId,memberId){
+  if(!confirm('¿Eliminar esta foto?'))return;
+  const {error}=await SB.from('event_photos').delete().eq('id',photoId);
+  if(error){toast('Error: '+error.message);return;}
+  _EPHOTOS=_EPHOTOS.filter(p=>p.id!==photoId);
+  renderMemberPhotos(memberId);toast('Foto eliminada');
+}
 function openAddMember(){openModal('modalAdd');}
 async function saveMember(){
   const name=document.getElementById('aName').value.trim();
   if(!name){alert('El nombre es requerido');return;}
-  const newId=String(_M.length+1).padStart(3,'0');
+  const maxNum=_M.reduce((mx,m)=>Math.max(mx,parseInt(m.numero||m.id)||0),0);
+  const numero=String(maxNum+1).padStart(3,'0');
+  const newId='m'+Date.now();
   const benStart=document.getElementById('aBenStart').value||null;
-  const data={id:newId,name,email:document.getElementById('aEmail').value.trim(),city:document.getElementById('aCity').value.trim(),vehicle:document.getElementById('aVehicle').value.trim(),nivel:document.getElementById('aNivel').value,date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:document.getElementById('aStatus').value,benefits_start:benStart};
+  const data={id:newId,numero,name,email:document.getElementById('aEmail').value.trim(),city:document.getElementById('aCity').value.trim(),vehicle:document.getElementById('aVehicle').value.trim(),nivel:document.getElementById('aNivel').value,date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:document.getElementById('aStatus').value,benefits_start:benStart};
   const {data:d,error}=await SB.from('members').insert(data).select().single();
   if(error){alert('Error al guardar: '+error.message);return;}
   _M.push(d);
@@ -828,8 +908,10 @@ async function approveApp(){
   const {error:e1}=await SB.from('applications').update({status:'Aprobado'}).eq('id',currentAppId);
   if(e1){alert('Error: '+e1.message);return;}
   a.status='Aprobado';
-  const newId=String(_M.length+1).padStart(3,'0');
-  const member={id:newId,name:a.name,email:a.email,city:a.city,vehicle:a.vehicle,nivel:'Alpha Premium',date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:'Activo'};
+  const maxNum=_M.reduce((mx,m)=>Math.max(mx,parseInt(m.numero||m.id)||0),0);
+  const numero=String(maxNum+1).padStart(3,'0');
+  const newId='m'+Date.now();
+  const member={id:newId,numero,name:a.name,email:a.email,city:a.city,vehicle:a.vehicle,nivel:'Alpha Premium',date:new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),status:'Activo'};
   const {data:d,error:e2}=await SB.from('members').insert(member).select().single();
   if(e2){alert('Error al crear miembro: '+e2.message);return;}
   _M.push(d);
