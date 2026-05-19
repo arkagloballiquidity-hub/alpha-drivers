@@ -68,7 +68,7 @@ nav{
   padding:22px 52px;display:flex;align-items:center;justify-content:space-between;
   transition:background .5s var(--ease)
 }
-nav.s{background:rgba(0,0,0,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--gline)}
+nav.s{background:rgba(6,6,6,.62);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .nl{font-family:var(--h);font-size:17px;letter-spacing:.24em;color:#fff;text-decoration:none;display:flex;align-items:center;gap:8px}
 .nl svg{width:26px;height:26px}
 .nls{display:flex;gap:36px;list-style:none}
@@ -387,10 +387,6 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   </ul>
   <div class="nav-right">
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">ES</button>
-    <a href="/login" class="bk-btn bk-admin" title="Admin Backoffice">
-      <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
-      <span class="bk-label">Admin</span>
-    </a>
     <a href="/login" class="bk-btn bk-member" title="Member Portal">
       <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       <span class="bk-label">Mi Portal</span>
@@ -581,10 +577,9 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   <!-- ===== PANEL 8 → 9: CTA ===== -->
   <div class="sp" id="p-cta">
     <div class="sp-bd" style="align-items:center;text-align:center;">
-      <p class="sp-tag" data-i18n="cta.tag">Apply</p>
-      <h2 class="sp-h1" data-i18n-html="cta.h2">Enter<br>the Grid</h2>
-      <p class="sp-sub" style="text-align:center;margin:0 auto 32px" data-i18n="cta.sub">Submit your application. Applications are reviewed individually.</p>
-      <a href="#" class="nb" data-i18n="cta.btn" onclick="openInviteGate(event)">Request Membership Access</a>
+      <p class="sp-tag" data-i18n="cta.tag">Membership</p>
+      <h2 class="sp-h1" data-i18n-html="cta.h2">By<br>Invitation<br>Only.</h2>
+      <p class="sp-sub" style="text-align:center;margin:0 auto 0" data-i18n="cta.sub">Membership is extended exclusively through personal invitation from an existing member or the Alpha Drivers team.</p>
     </div>
   </div>
 
@@ -704,9 +699,9 @@ const LANGS = {
     'lim.tag':'Exclusivity','lim.ctr-lbl':'Members Worldwide — Limited by Design',
     'lim.msg':'Not Open<br>to Everyone.',
     'lim.sub':'Membership is curated to preserve the quality of the community, the experiences and the value of belonging.',
-    'cta.tag':'Apply','cta.h2':'Enter<br>the Grid',
-    'cta.sub':'Submit your application. Applications are reviewed individually.',
-    'cta.btn':'Request Membership Access',
+    'cta.tag':'Membership','cta.h2':'By<br>Invitation<br>Only.',
+    'cta.sub':'Membership is extended exclusively through personal invitation from an existing member or the Alpha Drivers team.',
+    'cta.btn':'',
     'form.slbl':'Apply','form.sh2':'Enter<br>the Grid',
     'form.sb':'Submit your application. Applications are reviewed individually.',
     'form.fn.label':'Full Name','form.fn.ph':'Your full name',
@@ -759,9 +754,9 @@ const LANGS = {
     'lim.tag':'Exclusividad','lim.ctr-lbl':'Miembros — Limitado por Diseño',
     'lim.msg':'No Es Para<br>Todos.',
     'lim.sub':'La membresía es curada para preservar la calidad de la comunidad, las experiencias y el valor de pertenecer.',
-    'cta.tag':'Aplicar','cta.h2':'Únete<br>al Grid',
-    'cta.sub':'Envía tu solicitud. Las solicitudes son revisadas individualmente.',
-    'cta.btn':'Solicitar Acceso a la Membresía',
+    'cta.tag':'Membresía','cta.h2':'Solo por<br>Invitación.',
+    'cta.sub':'La membresía se extiende exclusivamente por invitación personal de un miembro o del equipo Alpha Drivers.',
+    'cta.btn':'',
     'form.slbl':'Solicitar','form.sh2':'Únete<br>al Grid',
     'form.sb':'Envía tu solicitud. Las solicitudes son revisadas individualmente.',
     'form.fn.label':'Nombre Completo','form.fn.ph':'Tu nombre completo',

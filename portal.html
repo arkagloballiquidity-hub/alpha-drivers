@@ -191,6 +191,10 @@ tr:last-child td{border-bottom:none}
       <svg viewBox="0 0 20 20" fill="none"><path d="M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5l7-3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
       Seguridad
     </button>
+    <button class="sb-link" onclick="showView('referir',this)">
+      <svg viewBox="0 0 20 20" fill="none"><circle cx="7" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 17c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M14 7h4m-2-2v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Referir
+    </button>
     <div class="sb-section">Eventos</div>
     <button class="sb-link" onclick="showView('eventos',this)">
       <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -252,7 +256,10 @@ tr:last-child td{border-bottom:none}
           <div class="info-note">Próxima renovación 2026</div>
         </div>
       </div>
-      <div class="section-title">Resumen de Beneficios</div>
+      <div class="sec-hd" style="margin-bottom:16px">
+        <div class="section-title" style="margin:0">Resumen de Beneficios</div>
+        <div style="font-size:10px;letter-spacing:.08em" id="benYearInfo"></div>
+      </div>
       <div class="ben-grid" id="benResumen"></div>
       <div class="contact-box">
         <div class="contact-txt">
@@ -361,6 +368,37 @@ tr:last-child td{border-bottom:none}
       <div class="contact-box">
         <div class="contact-txt"><h3>¿Evento especial?</h3><p>Solicita una experiencia personalizada para ti</p></div>
         <button class="contact-btn" onclick="showView('contacto',null)">Solicitar Experiencia</button>
+      </div>
+    </div>
+
+    <!-- REFERIR -->
+    <div class="view" id="view-referir">
+      <div class="section-title" style="margin-bottom:8px">Referir a un Candidato</div>
+      <p style="font-size:12px;color:rgba(255,255,255,.38);letter-spacing:.04em;line-height:1.7;margin-bottom:28px">Como miembro Alpha Drivers, puedes recomendar a alguien para que solicite su membresía. El sistema generará un código de invitación único para tu candidato.</p>
+      <div style="background:#111;border:1px solid rgba(255,255,255,.07);padding:32px;max-width:480px;margin-bottom:28px">
+        <div class="mfield">
+          <label>Nombre del Candidato</label>
+          <input type="text" id="refName" placeholder="Nombre completo"/>
+        </div>
+        <div class="mfield">
+          <label>Email del Candidato</label>
+          <input type="email" id="refEmail" placeholder="correo@email.com"/>
+        </div>
+        <div class="mfield">
+          <label>Nota Personal (opcional)</label>
+          <textarea id="refNota" rows="2" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:11px 14px;font-family:var(--b);font-size:12px;outline:none;resize:vertical" placeholder="¿Por qué recomiendas a este candidato?"></textarea>
+        </div>
+        <div id="refResult" style="display:none;margin-bottom:18px;padding:20px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
+          <div style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Código Generado</div>
+          <div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:.2em;color:#fff;margin-bottom:12px" id="refCode">—</div>
+          <button onclick="copyRefCode()" style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.5);background:none;border:1px solid rgba(255,255,255,.15);padding:7px 16px;cursor:pointer;transition:all .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">Copiar Código</button>
+          <p style="font-size:10px;color:rgba(255,255,255,.3);margin-top:12px;line-height:1.6">Comparte este código con tu candidato — lo necesitará para completar su solicitud en alphadrivers.mx</p>
+        </div>
+        <button class="btn-solicitar" id="refBtn" onclick="generateReferral()">Generar Invitación</button>
+      </div>
+      <div class="section-title" style="margin-bottom:16px">Mis Referencias</div>
+      <div id="refList">
+        <div style="text-align:center;color:rgba(255,255,255,.3);padding:24px;font-size:12px">Sin referencias enviadas aún</div>
       </div>
     </div>
 
@@ -604,12 +642,12 @@ const _MEMBER_ID=localStorage.getItem('ad_member_id');
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
 let _member=null,_memberUser=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[],
-    _myDocs=[],_myPayments=[],
+    _myDocs=[],_myPayments=[],_myReferrals=[],
     _cc={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
 
 async function loadAll(){
   const adUser=localStorage.getItem('ad_user');
-  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes]=await Promise.all([
+  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes]=await Promise.all([
     SB.from('members').select('*').eq('id',_MEMBER_ID).single(),
     SB.from('member_users').select('*').eq('member_id',_MEMBER_ID).maybeSingle(),
     SB.from('socios').select('*').order('nombre'),
@@ -619,6 +657,7 @@ async function loadAll(){
     SB.from('config_concierge').select('*'),
     SB.from('member_documents').select('id,member_id,member_name,filename,doc_type,status,uploaded_at,admin_nota').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
     SB.from('payment_proofs').select('id,member_id,member_name,filename,status,uploaded_at,admin_nota').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
+    SB.from('invite_codes').select('id,code,used,used_by,created_at,referred_name,referred_email').eq('referred_by',_MEMBER_ID).order('created_at',{ascending:false}),
   ]);
   _member=memberRes.data;
   _memberUser=muRes.data||null;
@@ -628,6 +667,7 @@ async function loadAll(){
   _myReqs=reqsRes.data||[];
   _myDocs=docsRes.data||[];
   _myPayments=paymentsRes.data||[];
+  _myReferrals=refRes.data||[];
   if(ccRes.data?.length){ccRes.data.forEach(r=>{_cc[r.key]=r.value;});}
   const eEl=document.getElementById('ccEmail');const wEl=document.getElementById('ccWhatsapp');const hEl=document.getElementById('ccHorario');
   if(eEl)eEl.textContent=_cc.email;if(wEl)wEl.textContent=_cc.whatsapp;if(hEl)hEl.textContent=_cc.horario;
@@ -644,20 +684,49 @@ function getLimites(){return _limites;}
 function myReqs(){return _myReqs;}
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
 
+// Annual period — benefits reset every year from benefits_start, no accumulation
+function getBenefitYearRange(){
+  const m=getMember();
+  if(!m?.benefits_start) return null;
+  const start=new Date(m.benefits_start+'T00:00:00');
+  const now=new Date();
+  // Walk forward by years until we find the current period
+  let ys=new Date(start);
+  while(new Date(ys.getFullYear()+1,ys.getMonth(),ys.getDate())<=now){
+    ys=new Date(ys.getFullYear()+1,ys.getMonth(),ys.getDate());
+  }
+  const ye=new Date(ys.getFullYear()+1,ys.getMonth(),ys.getDate());
+  return {ys,ye};
+}
+function areBenefitsLocked(){
+  const m=getMember();
+  if(!m?.benefits_start) return true;
+  return new Date()<new Date(m.benefits_start+'T00:00:00');
+}
 function servicioUsado(){
-  return _myReqs.filter(r=>r.tipo==='Crédito de Servicio'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
+  const range=getBenefitYearRange();
+  if(!range) return 0;
+  return _myReqs.filter(r=>r.tipo==='Crédito de Servicio'&&r.status!=='Rechazado'&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye).reduce((s,r)=>s+(Number(r.monto)||0),0);
 }
 function efectivoUsado(){
-  return _myReqs.filter(r=>r.tipo==='Beneficio en Efectivo'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
+  const range=getBenefitYearRange();
+  if(!range) return 0;
+  return _myReqs.filter(r=>r.tipo==='Beneficio en Efectivo'&&r.status!=='Rechazado'&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye).reduce((s,r)=>s+(Number(r.monto)||0),0);
 }
 
 // ── BENEFITS CONFIG ───────────────────────────────────────────
+function fmtISODate(iso){
+  if(!iso)return'—';
+  const d=new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'});
+}
 function getBenData(){
   const m=getMember();
+  const locked=areBenefitsLocked();
   const nivel=m.nivel||'Alpha Premium';
   const lim=getLimites()[nivel]||{efectivo:150000,servicio:50000};
-  const svUsado=servicioUsado();
-  const efUsado=efectivoUsado();
+  const svUsado=locked?0:servicioUsado();
+  const efUsado=locked?0:efectivoUsado();
   const svRest=Math.max(0,lim.servicio-svUsado);
   const efRest=Math.max(0,lim.efectivo-efUsado);
   return [
@@ -809,6 +878,55 @@ async function saveForcedPassword(){
   toast('Contraseña actualizada — bienvenido a Alpha Drivers');
 }
 
+// ── REFERRALS ─────────────────────────────────────────────────
+let _lastRefCode=null;
+function renderReferrals(){
+  const el=document.getElementById('refList');
+  if(!_myReferrals.length){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:24px;font-size:12px">Sin referencias enviadas aún</div>';return;}
+  el.innerHTML=`<div class="docs-list">`+_myReferrals.map(r=>`
+    <div class="doc-row">
+      <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+      <div class="doc-info">
+        <div class="doc-name">${r.referred_name||'Candidato'}</div>
+        <div class="doc-meta">${r.referred_email||''} · Código: <strong style="letter-spacing:.1em;color:rgba(255,255,255,.7)">${r.code}</strong> · ${fmtDate(r.created_at)}</div>
+      </div>
+      <span class="status ${r.used?'st-active':'st-pending'}">${r.used?'Usado':'Disponible'}</span>
+    </div>`).join('')+`</div>`;
+}
+async function generateReferral(){
+  const name=document.getElementById('refName').value.trim();
+  const email=document.getElementById('refEmail').value.trim();
+  const nota=document.getElementById('refNota').value.trim();
+  const btn=document.getElementById('refBtn');
+  if(!name||!email){toast('Nombre y email son requeridos');return;}
+  btn.disabled=true;btn.textContent='Generando...';
+  const m=getMember();
+  const code=Math.random().toString(36).substring(2,6).toUpperCase()+'-'+Math.random().toString(36).substring(2,6).toUpperCase();
+  const {data,error}=await SB.from('invite_codes').insert({
+    id:'ic'+Date.now(),code,
+    created_by:'member:'+m.id,
+    referred_by:_MEMBER_ID,
+    referred_name:name,
+    referred_email:email,
+    used:false,
+  }).select('id,code,used,used_by,created_at,referred_name,referred_email').single();
+  btn.disabled=false;btn.textContent='Generar Invitación';
+  if(error){toast('Error: '+error.message);return;}
+  _myReferrals.unshift(data||{id:'ic'+Date.now(),code,used:false,referred_name:name,referred_email:email,created_at:new Date().toISOString()});
+  _lastRefCode=code;
+  document.getElementById('refCode').textContent=code;
+  document.getElementById('refResult').style.display='block';
+  document.getElementById('refName').value='';
+  document.getElementById('refEmail').value='';
+  document.getElementById('refNota').value='';
+  renderReferrals();
+  toast('Código de invitación generado');
+}
+function copyRefCode(){
+  const code=document.getElementById('refCode').textContent;
+  navigator.clipboard.writeText(code).then(()=>toast('Código copiado: '+code)).catch(()=>toast('Copia manual: '+code));
+}
+
 // ── EVENTS ────────────────────────────────────────────────────
 const EVENTS=[
   {mes:'JUN',dia:'14',nombre:'ALPHA DRIVERS Road Tour — Etapa 1',lugar:'Circuito de los Arcos, Guadalajara',tag:'Confirmado',tagClass:'confirmed',desc:'Primera etapa del Road Tour anual. Salida desde CDMX en convoy. Incluye hospedaje y cena de gala.',detalles:['Fecha: 14–15 de Junio 2025','Lugar: Guadalajara, Jalisco','Incluye: Hospedaje, cenas y acceso VIP'],conf:true},
@@ -833,7 +951,22 @@ function render(){
   if(m.status==='Activo'){panelEstado.textContent='Activo';panelEstado.style.color='var(--green)';panelNote.textContent='Membresía vigente';panelNote.style.color='var(--green)';}
   else{panelEstado.textContent=m.status||'Pendiente';panelEstado.style.color='var(--amber)';panelNote.textContent='Contacta al concierge';panelNote.style.color='var(--amber)';}
   document.getElementById('panelNivel').textContent=m.nivel||'Alpha Premium';
+  // Benefit year info
+  const locked=areBenefitsLocked();
+  const range=getBenefitYearRange();
+  const benInfoEl=document.getElementById('benYearInfo');
+  if(benInfoEl){
+    if(locked){
+      benInfoEl.style.color='var(--amber)';
+      benInfoEl.textContent=m.benefits_start?'Beneficios disponibles desde el '+fmtISODate(m.benefits_start):'Beneficios pendientes de activación';
+    } else if(range){
+      benInfoEl.style.color='var(--green)';
+      benInfoEl.textContent='Ciclo activo: '+range.ys.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})+' — '+range.ye.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+    }
+  }
 
+  const locked=areBenefitsLocked();
+  const lockNote=locked?`<div style="font-size:10px;color:var(--amber);letter-spacing:.06em;margin-top:10px;padding:8px 12px;border:1px solid rgba(244,162,97,.2);background:rgba(244,162,97,.06)">${getMember().benefits_start?'Disponible el '+fmtISODate(getMember().benefits_start):'Beneficios por activar'}</div>`:'';
   // Ben resumen (panel)
   document.getElementById('benResumen').innerHTML=bens.map(b=>`
     <div class="ben-card">
@@ -841,10 +974,11 @@ function render(){
       <div class="ben-title">${b.title}</div>
       <div class="ben-val">${b.val}</div>
       <div class="ben-per">${b.unit}</div>
-      <div class="ben-bar-wrap"><div class="ben-bar" style="width:0%" data-pct="${b.pct}"></div></div>
+      <div class="ben-bar-wrap"><div class="ben-bar" style="width:0%" data-pct="${locked?0:b.pct}"></div></div>
       <div class="ben-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
-      <div class="ben-actions">
-        <button class="btn-solicitar" onclick="openBenModal('${b.modal}')">Solicitar</button>
+      ${lockNote}
+      <div class="ben-actions" style="margin-top:${locked?'8px':'auto'}">
+        ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\')">Solicitar</button>'}
         <button class="btn-ver" onclick="showView('beneficios',null)">Ver detalle</button>
       </div>
     </div>`).join('');
@@ -857,10 +991,11 @@ function render(){
       <div class="bdc-desc">${b.desc}</div>
       <div class="bdc-val">${b.val}</div>
       <div class="bdc-unit">${b.unit}</div>
-      <div class="bdc-bar-wrap"><div class="bdc-bar" style="width:0%" data-pct="${b.pct}"></div></div>
+      <div class="bdc-bar-wrap"><div class="bdc-bar" style="width:0%" data-pct="${locked?0:b.pct}"></div></div>
       <div class="bdc-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
-      <div class="bdc-actions">
-        <button class="btn-solicitar" onclick="openBenModal('${b.modal}')">Solicitar beneficio</button>
+      ${lockNote}
+      <div class="bdc-actions" style="margin-top:${locked?'8px':'auto'}">
+        ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\')">Solicitar beneficio</button>'}
         <button class="btn-ver" onclick="showView('solicitudes',null)">Mis solicitudes</button>
       </div>
     </div>`).join('');
@@ -917,6 +1052,7 @@ const VIEW_META={
   documentos:['Mis Documentos','Sube y gestiona tus documentos'],
   pago:['Mi Pago','Comprobante de pago de membresía'],
   seguridad:['Seguridad','Actualiza tu contraseña de acceso'],
+  referir:['Referir un Candidato','Genera una invitación para tu candidato'],
   eventos:['Próximos Eventos','Calendario exclusivo de miembros'],
   contacto:['Concierge','Servicio de concierge personal'],
 };
@@ -931,6 +1067,7 @@ function showView(id,btn){
   if(id==='solicitudes') renderSolicitudes();
   if(id==='documentos') renderDocs();
   if(id==='pago') renderPayments();
+  if(id==='referir') renderReferrals();
   setTimeout(()=>{
     document.querySelectorAll('.ben-bar[data-pct],.bdc-bar[data-pct]').forEach(b=>b.style.width=b.dataset.pct+'%');
   },80);
