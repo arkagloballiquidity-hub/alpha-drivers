@@ -294,6 +294,10 @@ tr:last-child td{border-bottom:none}
       <div class="sec-hd">
         <div class="section-title" style="margin:0">Mis Documentos</div>
       </div>
+      <!-- Contract download banner -->
+      <div id="contractBanner"></div>
+      <!-- Required docs checklist -->
+      <div id="reqDocsList"></div>
       <div style="background:#111;border:1px solid rgba(255,255,255,.07);padding:28px 32px;margin-bottom:24px">
         <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:16px">Subir Documento</div>
         <div style="margin-bottom:14px">
@@ -301,7 +305,7 @@ tr:last-child td{border-bottom:none}
           <select id="docType" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 14px;font-family:var(--b);font-size:12px;outline:none;min-width:220px">
             <option value="Identificación">Identificación Oficial</option>
             <option value="Comprobante Domicilio">Comprobante de Domicilio</option>
-            <option value="Contrato">Contrato Firmado</option>
+            <option value="Contrato Firmado">Contrato Firmado</option>
             <option value="Comprobante Pago">Comprobante de Pago</option>
             <option value="Otro">Otro</option>
           </select>
@@ -642,12 +646,12 @@ const _MEMBER_ID=localStorage.getItem('ad_member_id');
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
 let _member=null,_memberUser=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[],
-    _myDocs=[],_myPayments=[],_myReferrals=[],
+    _myDocs=[],_myPayments=[],_myReferrals=[],_reqDocs=[],_cfgGeneral={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
     _cc={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
 
 async function loadAll(){
   const adUser=localStorage.getItem('ad_user');
-  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes]=await Promise.all([
+  const [memberRes,muRes,sociosRes,rtRes,limRes,reqsRes,ccRes,docsRes,paymentsRes,refRes,rdocsRes,cgenRes]=await Promise.all([
     SB.from('members').select('*').eq('id',_MEMBER_ID).single(),
     SB.from('member_users').select('*').eq('member_id',_MEMBER_ID).maybeSingle(),
     SB.from('socios').select('*').order('nombre'),
@@ -658,6 +662,8 @@ async function loadAll(){
     SB.from('member_documents').select('id,member_id,member_name,filename,doc_type,status,uploaded_at,admin_nota').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
     SB.from('payment_proofs').select('id,member_id,member_name,filename,status,uploaded_at,admin_nota').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
     SB.from('invite_codes').select('id,code,used,used_by,created_at,referred_name,referred_email').eq('referred_by',_MEMBER_ID).order('created_at',{ascending:false}),
+    SB.from('config_required_docs').select('*').eq('activo',true).order('orden'),
+    SB.from('config_general').select('*'),
   ]);
   _member=memberRes.data;
   _memberUser=muRes.data||null;
@@ -668,6 +674,8 @@ async function loadAll(){
   _myDocs=docsRes.data||[];
   _myPayments=paymentsRes.data||[];
   _myReferrals=refRes.data||[];
+  _reqDocs=rdocsRes.data||[];
+  if(cgenRes.data?.length){cgenRes.data.forEach(r=>{_cfgGeneral[r.key]=r.value;});}
   if(ccRes.data?.length){ccRes.data.forEach(r=>{_cc[r.key]=r.value;});}
   const eEl=document.getElementById('ccEmail');const wEl=document.getElementById('ccWhatsapp');const hEl=document.getElementById('ccHorario');
   if(eEl)eEl.textContent=_cc.email;if(wEl)wEl.textContent=_cc.whatsapp;if(hEl)hEl.textContent=_cc.horario;
@@ -744,6 +752,37 @@ function fmtDate(iso){
 }
 function renderDocs(){
   const el=document.getElementById('docsList');
+  // Contract download banner
+  const contractEl=document.getElementById('contractBanner');
+  if(contractEl){
+    if(_cfgGeneral.contract_url){
+      contractEl.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:20px">
+        <div><div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:#fff;margin-bottom:3px">Contrato de Membresía</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Descarga, firma y sube el documento firmado</div></div>
+        <a href="${_cfgGeneral.contract_url}" download="${_cfgGeneral.contract_filename||'Contrato_Alpha_Drivers.pdf'}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#000;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;padding:10px 18px;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Descargar</a>
+      </div>`;
+    } else {
+      contractEl.innerHTML='';
+    }
+  }
+  // Required docs checklist
+  const reqEl=document.getElementById('reqDocsList');
+  if(reqEl&&_reqDocs.length){
+    reqEl.innerHTML=`<div style="margin-bottom:20px"><div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Documentos Requeridos</div>`+
+    _reqDocs.map(rd=>{
+      const uploaded=_myDocs.find(d=>d.doc_type===rd.name&&d.status!=='Rechazado');
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <div style="width:16px;height:16px;border-radius:50%;border:1.5px solid ${uploaded?'var(--green)':'rgba(255,255,255,.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${uploaded?'<svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:#fff">${rd.name}</div>
+          ${rd.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${rd.descripcion}</div>`:''}
+        </div>
+        <span class="status ${uploaded?uploaded.status==='Revisado'?'st-active':'st-pending':'st-rejected'}" style="font-size:8px">${uploaded?uploaded.status:'Pendiente'}</span>
+      </div>`;
+    }).join('')+`</div>`;
+  } else if(reqEl){reqEl.innerHTML='';}
+  // Uploaded docs list
   if(!_myDocs.length){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:32px;font-size:12px">Sin documentos enviados aún</div>';return;}
   el.innerHTML=_myDocs.map(d=>`
     <div class="doc-row">
@@ -923,14 +962,15 @@ async function generateReferral(){
   toast('Código de invitación generado');
   // Send invitation email to the candidate
   const memberName=m.name||m.nombre||'Un miembro Alpha Drivers';
-  const notaHtml=nota?`<p style="margin:24px 0 0;padding:20px;background:#111;border-left:3px solid #666;font-size:13px;color:#ccc;font-style:italic;line-height:1.7">"${nota}"</p>`:'';
+  const notaHtml=nota?`<tr><td style="padding:20px 24px;background:#111;border-left:3px solid #444;margin:20px 0"><p style="font-size:13px;color:#ccc;font-style:italic;line-height:1.7;margin:0">"${nota}"</p></td></tr>`:'';
+  const logoUrl='https://alphadrivers.mx/imagenes/logo-ad.png';
   fetch('/api/send-email',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       to:email,
       subject:`${memberName} te ha invitado a ALPHA DRIVERS`,
-      html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:40px;border-bottom:1px solid #222;text-align:center"><span style="font-family:Georgia,serif;font-size:28px;font-weight:700;letter-spacing:.2em">AD</span><br><span style="font-size:9px;letter-spacing:.4em;color:#666;text-transform:uppercase">ALPHA DRIVERS</span></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#666;margin:0 0 20px">Invitación Exclusiva</p><h1 style="font-size:24px;font-weight:700;letter-spacing:.04em;margin:0 0 16px;line-height:1.3">Hola, ${name}</h1><p style="font-size:14px;color:#aaa;line-height:1.8;margin:0 0 8px"><strong style="color:#fff">${memberName}</strong> te ha seleccionado personalmente para unirte a <strong style="color:#fff">ALPHA DRIVERS</strong>, el club privado de membresía para pilotos y entusiastas de la conducción de alto desempeño.</p>${notaHtml}</td></tr><tr><td style="padding:32px 0;text-align:center;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a"><p style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#555;margin:0 0 16px">Tu código de invitación</p><div style="display:inline-block;background:#fff;color:#000;font-family:monospace;font-size:28px;font-weight:700;letter-spacing:.25em;padding:16px 36px">${code}</div><p style="font-size:11px;color:#555;margin:20px 0 0;line-height:1.7">Ingresa a <strong style="color:#aaa">alphadrivers.mx</strong> y usa este código<br>al completar tu solicitud de membresía.</p></td></tr><tr><td style="padding:36px 0 0;text-align:center"><a href="https://alphadrivers.mx" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Solicitar Membresía</a><p style="font-size:10px;color:#444;margin:32px 0 0;line-height:1.7">ALPHA DRIVERS · Club Privado de Membresía<br>alphadrivers.mx</p></td></tr></table></td></tr></table></body></html>`
+      html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="${logoUrl}" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Invitación Exclusiva</p><h1 style="font-size:22px;font-weight:700;margin:0 0 16px;line-height:1.3">Hola, ${name}</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 8px"><strong style="color:#fff">${memberName}</strong> te ha seleccionado personalmente para unirte a <strong style="color:#fff">ALPHA DRIVERS</strong>, el club privado de membresía para pilotos y entusiastas de la conducción de alto desempeño.</p></td></tr>${notaHtml}<tr><td style="padding:32px 0;text-align:center;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a"><p style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#555;margin:0 0 16px">Tu código de invitación</p><div style="display:inline-block;background:#fff;color:#000;font-family:monospace;font-size:26px;font-weight:700;letter-spacing:.25em;padding:16px 36px">${code}</div><p style="font-size:11px;color:#555;margin:20px 0 0;line-height:1.7">Ingresa a <strong style="color:#aaa">alphadrivers.mx</strong> y usa este código<br>al completar tu solicitud de membresía.</p></td></tr><tr><td style="padding:36px 0 0;text-align:center"><a href="https://alphadrivers.mx" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Solicitar Membresía</a><p style="font-size:10px;color:#333;margin:32px 0 0;line-height:1.8">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
     })
   }).catch(()=>{});
 }

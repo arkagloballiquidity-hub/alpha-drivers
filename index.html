@@ -630,6 +630,11 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
       </div>
       <button type="submit" class="fbtn" id="fBtn" data-i18n="form.submit">Submit Application</button>
     </form>
+    <div id="formSuccess" style="display:none;text-align:center;padding:60px 0">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="margin-bottom:28px"><circle cx="24" cy="24" r="23" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/><path d="M14 24l7 7 13-14" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h3 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.12em;color:#fff;margin:0 0 16px" id="successTitle">Solicitud Recibida</h3>
+      <p style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.8;max-width:380px;margin:0 auto" id="successBody">Estamos revisando tu solicitud. En cuanto tengamos una respuesta nos pondremos en contacto contigo al correo que proporcionaste.</p>
+    </div>
   </div>
 </section>
 
@@ -1044,10 +1049,24 @@ window.addEventListener('DOMContentLoaded', () => {
             await SB.from('invite_codes').update({ used: true, used_by: email }).eq('id', _inviteValidated.id);
             _inviteValidated = null;
           }
-          btn.textContent = currentLang === 'en'
-            ? "Application Received — We'll be in touch."
-            : 'Solicitud Recibida — Nos pondremos en contacto.';
           applyForm.reset();
+          applyForm.style.display = 'none';
+          document.getElementById('formSuccess').style.display = 'block';
+          if (currentLang === 'en') {
+            document.getElementById('successTitle').textContent = 'Application Received';
+            document.getElementById('successBody').textContent = 'We are reviewing your application. We will get back to you at the email you provided.';
+          }
+          // Send confirmation email to applicant
+          const logoUrl = 'https://alphadrivers.mx/imagenes/logo-ad.png';
+          fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: email,
+              subject: 'ALPHA DRIVERS — Solicitud recibida',
+              html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="${logoUrl}" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Confirmación de Solicitud</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.4">Hola, ${name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0">Hemos recibido tu solicitud de membresía en <strong style="color:#fff">ALPHA DRIVERS</strong>. Nuestro equipo la está revisando cuidadosamente y nos pondremos en contacto contigo pronto con una respuesta.</p></td></tr><tr><td style="padding:28px 0;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a"><table width="100%"><tr><td style="padding:8px 0"><span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#444">Nombre</span><br><span style="font-size:13px;color:#ddd">${name}</span></td></tr><tr><td style="padding:8px 0"><span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#444">Email</span><br><span style="font-size:13px;color:#ddd">${email}</span></td></tr><tr><td style="padding:8px 0"><span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#444">Ciudad</span><br><span style="font-size:13px;color:#ddd">${city||'—'}</span></td></tr></table></td></tr><tr><td style="padding:36px 0 0;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
+            })
+          }).catch(() => {});
         } else {
           btn.disabled = false;
           btn.textContent = currentLang === 'en' ? 'Submit Application' : 'Enviar Solicitud';

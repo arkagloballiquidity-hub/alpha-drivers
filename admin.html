@@ -266,6 +266,28 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
         <div class="cfg-row"><span class="cfg-lbl">Horario de Atención</span><input class="cfg-input" id="cfgCHorario" style="width:220px" placeholder="Lun–Vie · 9am–8pm"/></div>
         <div style="margin-top:20px"><button class="btn-sm" onclick="saveConcierge()">Guardar Concierge</button></div>
       </div>
+      <!-- Documentos Requeridos -->
+      <div class="cfg-card" style="margin-top:16px">
+        <div class="cfg-card-title">Documentos Requeridos para Miembros</div>
+        <p style="font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.04em;margin-bottom:20px;line-height:1.7">Define qué documentos deben subir los miembros desde su portal. Aparecerán como requisitos en la sección "Mis Documentos".</p>
+        <div id="reqDocsList" style="margin-bottom:16px"></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input id="newDocName" type="text" placeholder="Nombre del documento" style="flex:1;min-width:180px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
+          <input id="newDocDesc" type="text" placeholder="Descripción (opcional)" style="flex:2;min-width:200px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
+          <button class="btn-sm" onclick="addRequiredDoc()">+ Agregar</button>
+        </div>
+      </div>
+      <!-- Contrato -->
+      <div class="cfg-card" style="margin-top:16px">
+        <div class="cfg-card-title">Contrato de Membresía</div>
+        <p style="font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.04em;margin-bottom:20px;line-height:1.7">Pega la URL pública del contrato en PDF. Los miembros podrán descargarlo desde su portal para firmarlo y subirlo de vuelta.</p>
+        <div class="cfg-row"><span class="cfg-lbl">URL del Contrato (PDF)</span><input class="cfg-input" id="cfgContractUrl" type="url" style="width:300px" placeholder="https://…/contrato.pdf"/></div>
+        <div class="cfg-row"><span class="cfg-lbl">Nombre del Archivo</span><input class="cfg-input" id="cfgContractFilename" type="text" style="width:220px" placeholder="Contrato_Alpha_Drivers.pdf"/></div>
+        <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+          <button class="btn-sm" onclick="saveContract()">Guardar Contrato</button>
+          <span id="contractPreviewLink" style="font-size:11px;color:rgba(255,255,255,.35)"></span>
+        </div>
+      </div>
       <!-- Invite Codes full-width -->
       <div class="cfg-card" style="margin-top:16px">
         <div class="cfg-card-title">Códigos de Invitación</div>
@@ -481,10 +503,11 @@ function logout(){localStorage.removeItem('ad_role');localStorage.removeItem('ad
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
 let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_STAFF=[],_PAGOS=[],_DOCS=[],_ICODES=[],
     _LIM={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},
-    _CC={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
+    _CC={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'},
+    _REQ_DOCS=[],_CFG_GENERAL={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'};
 
 async function loadAll(){
-  const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes]=await Promise.all([
+  const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes,rdocs,cgen]=await Promise.all([
     SB.from('members').select('*').order('created_at'),
     SB.from('member_users').select('*'),
     SB.from('applications').select('*').order('created_at',{ascending:false}),
@@ -497,9 +520,13 @@ async function loadAll(){
     SB.from('payment_proofs').select('id,member_id,member_name,filename,file_type,file_data,status,uploaded_at,admin_nota').order('uploaded_at',{ascending:false}),
     SB.from('member_documents').select('id,member_id,member_name,filename,file_type,file_data,doc_type,status,uploaded_at,admin_nota').order('uploaded_at',{ascending:false}),
     SB.from('invite_codes').select('*').order('created_at',{ascending:false}),
+    SB.from('config_required_docs').select('*').order('orden'),
+    SB.from('config_general').select('*'),
   ]);
   _M=m.data||[];_MU=mu.data||[];_A=a.data||[];_S=s.data||[];_RT=rt.data||[];_BR=br.data||[];_STAFF=staff.data||[];
   _PAGOS=pagos.data||[];_DOCS=docs.data||[];_ICODES=icodes.data||[];
+  _REQ_DOCS=rdocs.data||[];
+  if(cgen.data?.length){cgen.data.forEach(r=>{_CFG_GENERAL[r.key]=r.value;});}
   if(lim.data?.length){_LIM={};lim.data.forEach(l=>{_LIM[l.nivel]={efectivo:Number(l.efectivo),servicio:Number(l.servicio)};});}
   if(cc.data?.length){cc.data.forEach(r=>{_CC[r.key]=r.value;});}
 }
@@ -671,6 +698,8 @@ function renderView(name){
     document.getElementById('cfgCHorario').value=_CC.horario||'';
     renderRoadTours();
     renderInviteCodes();
+    renderRequiredDocs();
+    renderContract();
   }
 }
 
@@ -804,9 +833,23 @@ async function approveApp(){
   const {data:d,error:e2}=await SB.from('members').insert(member).select().single();
   if(e2){alert('Error al crear miembro: '+e2.message);return;}
   _M.push(d);
-  toast('Solicitud aprobada — miembro #'+newId+' creado');
+  // Auto-generate credentials
+  const username=a.email.toLowerCase().trim();
+  const password='Alpha'+Math.floor(1000+Math.random()*9000)+'!';
+  const {data:mu,error:e3}=await SB.from('member_users').insert({member_id:newId,username,password,active:true,must_change_password:true}).select().single();
+  if(!e3&&mu)_MU.push(mu);
+  // Send welcome email with credentials
+  const logoUrl='https://alphadrivers.mx/imagenes/logo-ad.png';
+  fetch('/api/send-email',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      to:a.email,
+      subject:'Bienvenido a ALPHA DRIVERS — Tu membresía ha sido aprobada',
+      html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="${logoUrl}" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Membresía Aprobada</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.4">Bienvenido al club, ${a.name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Tu solicitud ha sido aprobada. A continuación encontrarás tus credenciales para acceder al portal de miembros. Te recomendamos cambiar tu contraseña en el primer inicio de sesión.</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e;margin-bottom:28px"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Usuario</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0 0 22px;color:#fff">${username}</p><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Contraseña temporal</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0;color:#fff">${password}</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Portal →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
+    })
+  }).catch(()=>{});
+  toast('Solicitud aprobada — credenciales enviadas a '+a.email);
   closeModal('modalApp');renderView('apps');
-  setTimeout(()=>openCreds(newId),400);
 }
 async function rejectApp(){
   const a=_A.find(x=>x.id===currentAppId);if(!a)return;
@@ -942,21 +985,8 @@ async function saveCreds(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         to:m.email,
-        subject:'Bienvenido a ALPHA DRIVERS — Tu acceso al portal',
-        html:`<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body style="font-family:Inter,Arial,sans-serif;background:#000;color:#fff;padding:48px 24px;max-width:520px;margin:0 auto">
-<p style="font-size:28px;font-weight:700;letter-spacing:5px;margin:0 0 4px">ALPHA DRIVERS</p>
-<p style="font-size:9px;letter-spacing:6px;color:rgba(255,255,255,.38);margin:0 0 48px;text-transform:uppercase">Drive Your Legacy</p>
-<p style="font-size:20px;font-weight:600;margin:0 0 14px">Bienvenido al club, ${m.name.split(' ')[0]}.</p>
-<p style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.85;margin:0 0 32px">Tu acceso al portal de miembros ha sido activado. Ingresa con las siguientes credenciales:</p>
-<div style="background:#111;border:1px solid rgba(255,255,255,.1);padding:28px 32px;margin-bottom:36px">
-  <p style="font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.38);margin:0 0 6px;text-transform:uppercase">Usuario</p>
-  <p style="font-size:20px;font-weight:600;margin:0 0 22px;font-family:monospace">${username}</p>
-  <p style="font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.38);margin:0 0 6px;text-transform:uppercase">Contraseña</p>
-  <p style="font-size:20px;font-weight:600;margin:0;font-family:monospace">${password}</p>
-</div>
-<a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:16px 36px;text-decoration:none">Acceder al Portal →</a>
-<p style="margin-top:48px;font-size:11px;color:rgba(255,255,255,.25);line-height:1.7">ALPHA DRIVERS · Club Privado de Membresía Deportiva · México<br>Por favor no respondas a este correo.</p>
-</body></html>`
+        subject:'ALPHA DRIVERS — Tu acceso al portal ha sido actualizado',
+        html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="https://alphadrivers.mx/imagenes/logo-ad.png" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Acceso al Portal</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px">Hola, ${m.name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Tu acceso al portal de miembros ha sido actualizado. Ingresa con las siguientes credenciales:</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Usuario</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0 0 22px;color:#fff">${username}</p><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Contraseña temporal</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0;color:#fff">${password}</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Portal →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
       })
     }).catch(()=>{}); // fail silently — don't block UX
   }
@@ -1220,6 +1250,66 @@ async function decideDoc(decision){
   closeModal('modalDocAdmin');renderView('docs-admin');updateBenCount();
 }
 
+// ── REQUIRED DOCS ────────────────────────────────────────────
+function renderRequiredDocs(){
+  const el=document.getElementById('reqDocsList');if(!el)return;
+  if(!_REQ_DOCS.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);padding:8px 0;margin-bottom:8px">Sin documentos configurados</div>';return;}
+  el.innerHTML=_REQ_DOCS.map((d,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <div style="flex:1">
+        <div style="font-size:12px;color:${d.activo?'#fff':'rgba(255,255,255,.3)'};font-weight:500">${d.name}</div>
+        ${d.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${d.descripcion}</div>`:''}
+      </div>
+      <span class="status ${d.activo?'st-active':'st-rejected'}" style="font-size:8px">${d.activo?'Activo':'Inactivo'}</span>
+      <button class="tbl-action" onclick="toggleRequiredDoc('${d.id}',${!d.activo})">${d.activo?'Desactivar':'Activar'}</button>
+      <button class="tbl-action" style="color:var(--red)" onclick="deleteRequiredDoc('${d.id}')">×</button>
+    </div>`).join('');
+}
+async function addRequiredDoc(){
+  const name=document.getElementById('newDocName').value.trim();
+  const desc=document.getElementById('newDocDesc').value.trim();
+  if(!name)return;
+  const id='doc'+Date.now();
+  const orden=(_REQ_DOCS.length?Math.max(..._REQ_DOCS.map(d=>d.orden||0)):0)+1;
+  const {data,error}=await SB.from('config_required_docs').insert({id,name,descripcion:desc,orden,activo:true}).select().single();
+  if(error){toast('Error: '+error.message);return;}
+  _REQ_DOCS.push(data);
+  document.getElementById('newDocName').value='';document.getElementById('newDocDesc').value='';
+  renderRequiredDocs();toast('Documento agregado');
+}
+async function toggleRequiredDoc(id,activo){
+  const {error}=await SB.from('config_required_docs').update({activo}).eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  const d=_REQ_DOCS.find(x=>x.id===id);if(d)d.activo=activo;
+  renderRequiredDocs();toast(activo?'Documento activado':'Documento desactivado');
+}
+async function deleteRequiredDoc(id){
+  if(!confirm('¿Eliminar este documento requerido?'))return;
+  const {error}=await SB.from('config_required_docs').delete().eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  _REQ_DOCS=_REQ_DOCS.filter(d=>d.id!==id);
+  renderRequiredDocs();toast('Documento eliminado');
+}
+// ── CONTRACT ──────────────────────────────────────────────────
+function renderContract(){
+  const urlEl=document.getElementById('cfgContractUrl');
+  const fnEl=document.getElementById('cfgContractFilename');
+  const previewEl=document.getElementById('contractPreviewLink');
+  if(urlEl)urlEl.value=_CFG_GENERAL.contract_url||'';
+  if(fnEl)fnEl.value=_CFG_GENERAL.contract_filename||'Contrato_Alpha_Drivers.pdf';
+  if(previewEl&&_CFG_GENERAL.contract_url){
+    previewEl.innerHTML=`<a href="${_CFG_GENERAL.contract_url}" target="_blank" style="color:rgba(255,255,255,.5);text-decoration:underline;font-size:11px">Ver contrato actual →</a>`;
+  }
+}
+async function saveContract(){
+  const url=(document.getElementById('cfgContractUrl').value||'').trim();
+  const fname=(document.getElementById('cfgContractFilename').value||'Contrato_Alpha_Drivers.pdf').trim();
+  const rows=[{key:'contract_url',value:url},{key:'contract_filename',value:fname}];
+  const {error}=await SB.from('config_general').upsert(rows,{onConflict:'key'});
+  if(error){toast('Error: '+error.message);return;}
+  _CFG_GENERAL.contract_url=url;_CFG_GENERAL.contract_filename=fname;
+  renderContract();toast('Contrato guardado');
+}
 // ── INVITE CODES ──────────────────────────────────────────────
 function renderInviteCodes(){
   const el=document.getElementById('inviteCodesList');
