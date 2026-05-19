@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ALPHA DRIVERS — Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--h:'Bebas Neue',sans-serif;--b:'Inter',sans-serif;--ease:cubic-bezier(.22,1,.36,1);--red:#e63946}
+body{background:#080808;color:#fff;font-family:var(--b);min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+
+.wrap{width:100%;max-width:420px;padding:0 24px}
+.logo{text-align:center;margin-bottom:48px}
+.logo-mark{font-family:var(--h);font-size:52px;letter-spacing:.22em;color:#fff;display:block;line-height:1}
+.logo-sub{font-size:8px;letter-spacing:.48em;text-transform:uppercase;color:rgba(255,255,255,.24);margin-top:4px;display:block}
+
+.card{background:#111;border:1px solid rgba(255,255,255,.08);padding:40px}
+.card-title{font-family:var(--h);font-size:22px;letter-spacing:.14em;color:#fff;margin-bottom:6px}
+.card-sub{font-size:11px;color:rgba(255,255,255,.32);letter-spacing:.04em;margin-bottom:32px}
+
+.field{margin-bottom:16px}
+.field label{display:block;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.36);margin-bottom:8px}
+.field input{width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:13px 16px;font-family:var(--b);font-size:13px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:rgba(255,255,255,.4)}
+.field input::placeholder{color:rgba(255,255,255,.18)}
+
+.error{background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.25);color:var(--red);font-size:11px;padding:12px 16px;margin-bottom:16px;display:none;letter-spacing:.04em}
+.error.show{display:block}
+
+.btn{width:100%;padding:15px;background:#fff;color:#000;border:none;cursor:pointer;font-family:var(--b);font-size:10px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;transition:background .2s;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn:hover{background:#e8e8e8}
+.btn .spin{width:14px;height:14px;border:1.5px solid rgba(0,0,0,.25);border-top-color:#000;border-radius:50%;animation:sp .7s linear infinite;display:none}
+.loading .spin{display:block}
+.loading .btn-txt{display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.hint{margin-top:20px;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.hint p{font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.28);line-height:1.8}
+.hint strong{color:rgba(255,255,255,.45)}
+
+.foot{text-align:center;margin-top:24px}
+.foot a{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);text-decoration:none;transition:color .2s}
+.foot a:hover{color:rgba(255,255,255,.6)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="width:200px;height:auto;display:block;margin:0 auto 4px"/>
+    <span class="logo-sub">Drive Your Legacy</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Iniciar Sesión</div>
+    <div class="card-sub">Ingresa tus credenciales para acceder al panel</div>
+
+    <div class="error" id="errMsg">Usuario o contraseña incorrectos</div>
+
+    <div class="field">
+      <label>Usuario</label>
+      <input type="text" id="user" placeholder="tu usuario" autocomplete="username" autofocus/>
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+
+    <button class="btn" id="loginBtn" onclick="doLogin()">
+      <div class="spin"></div>
+      <span class="btn-txt">Ingresar</span>
+    </button>
+
+    <div class="hint">
+      <p><strong>Admin:</strong> usuario <strong>admin</strong> · contraseña <strong>alpha2025</strong></p>
+      <p style="margin-top:4px">Los miembros inician sesión con las credenciales asignadas desde el panel Admin.</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <a href="index.html">← Volver al sitio principal</a>
+  </div>
+</div>
+
+<script>
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogin() {
+  const user = document.getElementById('user').value.trim().toLowerCase();
+  const pass = document.getElementById('pass').value;
+  const btn  = document.getElementById('loginBtn');
+  const err  = document.getElementById('errMsg');
+
+  err.classList.remove('show');
+
+  // Admin hardcoded
+  if (user === 'admin' && pass === 'alpha2025') {
+    btn.classList.add('loading'); btn.disabled = true;
+    localStorage.setItem('ad_role', 'admin');
+    localStorage.setItem('ad_user', 'admin');
+    localStorage.setItem('ad_session', Date.now());
+    setTimeout(() => { location.href = 'admin.html'; }, 700);
+    return;
+  }
+
+  // Member credentials from localStorage
+  const memberUsers = JSON.parse(localStorage.getItem('ad_member_users') || '[]');
+  const mu = memberUsers.find(u => u.username === user && u.password === pass && u.active !== false);
+  if (mu) {
+    btn.classList.add('loading'); btn.disabled = true;
+    localStorage.setItem('ad_role', 'member');
+    localStorage.setItem('ad_user', user);
+    localStorage.setItem('ad_member_id', mu.memberId);
+    localStorage.setItem('ad_session', Date.now());
+    setTimeout(() => { location.href = 'portal.html'; }, 700);
+    return;
+  }
+
+  err.classList.add('show');
+  document.getElementById('pass').value = '';
+}
+</script>
+</body>
+</html>

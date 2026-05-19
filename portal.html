@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ALPHA DRIVERS — Mi Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--h:'Bebas Neue',sans-serif;--b:'Inter',sans-serif;--green:#2ec4b6;--amber:#f4a261;--red:#e63946}
+body{background:#0a0a0a;color:#fff;font-family:var(--b);min-height:100vh;-webkit-font-smoothing:antialiased}
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:#111;border-right:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;z-index:100}
+.sb-logo{padding:28px 24px 24px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-logo-txt{font-family:var(--h);font-size:22px;letter-spacing:.18em;color:#fff}
+.sb-logo-sub{font-size:8px;letter-spacing:.36em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:2px}
+.sb-badge{margin-top:10px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:4px 10px;display:inline-block}
+.sb-nav{flex:1;padding:16px 0;overflow-y:auto}
+.sb-section{font-size:8px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.2);padding:16px 24px 8px}
+.sb-link{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:12px;font-weight:500;color:rgba(255,255,255,.45);text-decoration:none;transition:color .2s,background .2s;letter-spacing:.04em;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sb-link:hover{color:#fff;background:rgba(255,255,255,.04)}
+.sb-link.active{color:#fff;background:rgba(255,255,255,.07);border-right:2px solid #fff}
+.sb-link svg{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.sb-link.active svg,.sb-link:hover svg{opacity:1}
+.sb-foot{padding:20px 24px;border-top:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:10px}
+.sb-back{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3);text-decoration:none;transition:color .2s;cursor:pointer;border:none;background:none}
+.sb-back:hover{color:#fff}
+.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{padding:24px 36px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
+.page-title{font-family:var(--h);font-size:28px;letter-spacing:.1em;color:#fff}
+.page-sub{font-size:11px;color:rgba(255,255,255,.3);margin-top:2px;letter-spacing:.04em}
+.member-num{font-family:var(--h);font-size:13px;letter-spacing:.2em;color:rgba(255,255,255,.35)}
+.content{padding:36px;flex:1}
+.view{display:none}
+.view.active{display:block}
+/* WELCOME */
+.welcome{background:#111;border:1px solid rgba(255,255,255,.07);padding:32px 36px;margin-bottom:32px;display:flex;align-items:center;justify-content:space-between}
+.welcome-txt h2{font-family:var(--h);font-size:32px;letter-spacing:.1em;color:#fff;margin-bottom:4px}
+.welcome-txt p{font-size:12px;color:rgba(255,255,255,.38);letter-spacing:.04em}
+.welcome-member{text-align:right}
+.wm-num{font-family:var(--h);font-size:52px;letter-spacing:.06em;color:rgba(255,255,255,.12);line-height:1}
+.wm-lbl{font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.2)}
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.info-card{background:#111;border:1px solid rgba(255,255,255,.07);padding:24px 28px}
+.info-lbl{font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px}
+.info-val{font-family:var(--h);font-size:26px;letter-spacing:.06em;color:#fff;line-height:1;margin-bottom:4px}
+.info-note{font-size:10px;color:var(--green)}
+/* SECTION */
+.section-title{font-family:var(--h);font-size:18px;letter-spacing:.12em;color:#fff;margin-bottom:16px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+/* BEN CARDS (panel) */
+.ben-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:32px}
+.ben-card{background:#111;border:1px solid rgba(255,255,255,.07);padding:28px 32px;display:flex;flex-direction:column}
+.ben-num{font-family:var(--h);font-size:13px;letter-spacing:.24em;color:rgba(255,255,255,.18);margin-bottom:16px}
+.ben-title{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:12px}
+.ben-val{font-family:var(--h);font-size:38px;letter-spacing:.06em;color:#fff;line-height:1;margin-bottom:6px}
+.ben-per{font-size:10px;color:rgba(255,255,255,.28);letter-spacing:.08em;margin-bottom:16px}
+.ben-bar-wrap{height:2px;background:rgba(255,255,255,.08);position:relative}
+.ben-bar{height:2px;background:#fff;position:absolute;top:0;left:0;transition:width 1.2s ease}
+.ben-bar-lbl{display:flex;justify-content:space-between;margin-top:8px;margin-bottom:20px}
+.ben-bar-lbl span{font-size:9px;color:rgba(255,255,255,.25);letter-spacing:.1em}
+.ben-bar-lbl span:last-child{color:var(--green)}
+.ben-actions{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn-solicitar{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#000;background:#fff;padding:9px 20px;border:none;cursor:pointer;transition:background .2s}
+.btn-solicitar:hover{background:#ddd}
+.btn-ver{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.5);background:none;padding:9px 16px;border:1px solid rgba(255,255,255,.15);cursor:pointer;transition:all .2s}
+.btn-ver:hover{color:#fff;border-color:rgba(255,255,255,.4)}
+/* BEN DETAIL (beneficios view) */
+.ben-detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:32px}
+.ben-detail-card{background:#111;border:1px solid rgba(255,255,255,.07);padding:32px;display:flex;flex-direction:column}
+.bdc-num{font-family:var(--h);font-size:11px;letter-spacing:.28em;color:rgba(255,255,255,.18);margin-bottom:20px}
+.bdc-title{font-family:var(--h);font-size:22px;letter-spacing:.1em;color:#fff;margin-bottom:8px}
+.bdc-desc{font-size:11px;color:rgba(255,255,255,.38);letter-spacing:.04em;line-height:1.7;margin-bottom:24px}
+.bdc-val{font-family:var(--h);font-size:44px;letter-spacing:.06em;color:#fff;line-height:1;margin-bottom:4px}
+.bdc-unit{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:20px}
+.bdc-bar-wrap{height:2px;background:rgba(255,255,255,.08);position:relative;margin-bottom:8px}
+.bdc-bar{height:2px;background:#fff;position:absolute;top:0;left:0;transition:width 1.2s ease}
+.bdc-bar-lbl{display:flex;justify-content:space-between;margin-bottom:20px}
+.bdc-bar-lbl span{font-size:9px;color:rgba(255,255,255,.25);letter-spacing:.1em}
+.bdc-bar-lbl span:last-child{color:var(--green)}
+.bdc-actions{margin-top:auto;display:flex;gap:8px}
+/* EVENTS */
+.events-list{display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.event-row{background:#111;border:1px solid rgba(255,255,255,.07);padding:18px 24px;display:flex;align-items:center;gap:20px;transition:border-color .2s}
+.event-row:hover{border-color:rgba(255,255,255,.14)}
+.event-date{font-family:var(--h);font-size:20px;letter-spacing:.08em;color:rgba(255,255,255,.25);min-width:52px;line-height:1.2}
+.event-info{flex:1}
+.event-name{font-size:12px;font-weight:500;color:#fff;letter-spacing:.04em;margin-bottom:2px}
+.event-loc{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.04em}
+.event-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.event-tag{font-size:8px;letter-spacing:.2em;text-transform:uppercase;padding:4px 10px;border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.45)}
+.event-tag.confirmed{color:var(--green);border-color:rgba(46,196,182,.3)}
+.event-tag.vip{color:var(--amber);border-color:rgba(244,162,97,.3)}
+.btn-confirm{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:#000;background:#fff;padding:6px 14px;border:none;cursor:pointer;transition:background .2s}
+.btn-confirm:hover{background:#ddd}
+.btn-confirm.done{background:rgba(46,196,182,.12);color:var(--green);border:1px solid rgba(46,196,182,.3)}
+/* DOCS */
+.docs-list{display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.doc-row{background:#111;border:1px solid rgba(255,255,255,.07);padding:18px 24px;display:flex;align-items:center;gap:20px}
+.doc-icon{width:36px;height:36px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-info{flex:1}
+.doc-name{font-size:12px;font-weight:500;color:#fff;margin-bottom:2px}
+.doc-meta{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.04em}
+.doc-btn{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);background:none;border:1px solid rgba(255,255,255,.12);padding:6px 14px;cursor:pointer;transition:all .2s}
+.doc-btn:hover{color:#fff;border-color:rgba(255,255,255,.4)}
+/* STATUS TABLE */
+.table-wrap{background:#111;border:1px solid rgba(255,255,255,.07);overflow:hidden;margin-bottom:32px}
+table{width:100%;border-collapse:collapse}
+th{font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);font-weight:500;padding:14px 20px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06)}
+td{font-size:12px;color:rgba(255,255,255,.7);padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.04)}
+tr:last-child td{border-bottom:none}
+.status{font-size:8px;letter-spacing:.2em;text-transform:uppercase;padding:4px 10px;border:1px solid;white-space:nowrap}
+.st-active{color:var(--green);border-color:rgba(46,196,182,.3);background:rgba(46,196,182,.07)}
+.st-pending{color:var(--amber);border-color:rgba(244,162,97,.3);background:rgba(244,162,97,.07)}
+.st-rejected{color:var(--red);border-color:rgba(230,57,70,.3);background:rgba(230,57,70,.07)}
+/* CONTACT */
+.contact-box{background:#111;border:1px solid rgba(255,255,255,.07);padding:28px 32px;display:flex;align-items:center;justify-content:space-between}
+.contact-txt h3{font-family:var(--h);font-size:20px;letter-spacing:.1em;color:#fff;margin-bottom:4px}
+.contact-txt p{font-size:11px;color:rgba(255,255,255,.32);letter-spacing:.04em}
+.contact-btn{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#000;background:#fff;padding:12px 28px;border:none;cursor:pointer;transition:background .2s}
+.contact-btn:hover{background:#ddd}
+/* TOAST */
+.toast{position:fixed;bottom:32px;right:32px;background:#fff;color:#000;padding:14px 24px;font-size:11px;font-weight:600;letter-spacing:.08em;z-index:9999;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#111;border:1px solid rgba(255,255,255,.1);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;margin:24px}
+.modal-hd{padding:28px 32px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:var(--h);font-size:20px;letter-spacing:.12em;color:#fff}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:20px;line-height:1;transition:color .2s}
+.modal-close:hover{color:#fff}
+.modal-body{padding:28px 32px}
+.mfield{margin-bottom:18px}
+.mfield label{display:block;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.36);margin-bottom:8px}
+.mfield input,.mfield select,.mfield textarea{width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:11px 14px;font-family:var(--b);font-size:12px;outline:none;transition:border-color .2s;resize:vertical}
+.mfield input:focus,.mfield select:focus,.mfield textarea:focus{border-color:rgba(255,255,255,.4)}
+.mfield select option{background:#111}
+.mfield .hint{font-size:10px;color:rgba(255,255,255,.3);margin-top:6px;letter-spacing:.04em}
+.modal-foot{padding:20px 32px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:10px;justify-content:flex-end}
+.btn-sm{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#000;background:#fff;padding:10px 22px;border:none;cursor:pointer;transition:background .2s}
+.btn-sm:hover{background:#ddd}
+.btn-sm-out{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:transparent;padding:10px 22px;border:1px solid rgba(255,255,255,.2);cursor:pointer;transition:all .2s}
+.btn-sm-out:hover{border-color:#fff}
+.modal-limit-bar{height:2px;background:rgba(255,255,255,.08);position:relative;margin-top:8px}
+.modal-limit-fill{height:2px;background:var(--green);position:absolute;top:0;left:0;transition:width .4s}
+.req-tag{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);background:none;border:1px solid rgba(255,255,255,.12);padding:7px 14px;cursor:pointer;transition:all .2s}
+.req-tag:hover{color:#fff;border-color:rgba(255,255,255,.4)}
+.req-tag.active-tag{color:#000;background:#fff;border-color:#fff}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-logo">
+    <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="width:130px;height:auto;object-fit:contain;display:block;margin-bottom:8px"/>
+    <div class="sb-logo-sub">Portal del Miembro</div>
+    <div class="sb-badge" id="sbBadge">Miembro</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Mi cuenta</div>
+    <button class="sb-link active" onclick="showView('panel',this)">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+      Mi Panel
+    </button>
+    <button class="sb-link" onclick="showView('beneficios',this)">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 9h16" stroke="currentColor" stroke-width="1.4"/></svg>
+      Mis Beneficios
+    </button>
+    <button class="sb-link" onclick="showView('solicitudes',this)">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h10M3 15h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Mis Solicitudes
+    </button>
+    <button class="sb-link" onclick="showView('documentos',this)">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Mis Documentos
+    </button>
+    <div class="sb-section">Eventos</div>
+    <button class="sb-link" onclick="showView('eventos',this)">
+      <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Próximos Eventos
+    </button>
+    <button class="sb-link" onclick="showView('contacto',this)">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M3 4h14a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M2 5l8 6 8-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Concierge
+    </button>
+  </nav>
+  <div class="sb-foot">
+    <a href="index.html" class="sb-back">
+      <svg viewBox="0 0 16 16" fill="none" width="12" height="12"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Volver al sitio
+    </a>
+    <button class="sb-back" onclick="logout()">
+      <svg viewBox="0 0 16 16" fill="none" width="12" height="12"><path d="M6 3H3v10h3M10 5l3 3-3 3M13 8H7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Cerrar Sesión
+    </button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">Bienvenido</div>
+      <div class="page-sub" id="pageSub">Tu membresía Alpha Drivers</div>
+    </div>
+    <div class="member-num" id="topMemberNum">Miembro</div>
+  </div>
+  <div class="content">
+
+    <!-- MI PANEL -->
+    <div class="view active" id="view-panel">
+      <div class="welcome">
+        <div class="welcome-txt">
+          <h2 id="memberName">—</h2>
+          <p id="memberMeta">Cargando...</p>
+        </div>
+        <div class="welcome-member">
+          <div class="wm-num" id="memberNumLarge">—</div>
+          <div class="wm-lbl">Número de Miembro</div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-lbl">Estado</div>
+          <div class="info-val" id="panelEstado">—</div>
+          <div class="info-note" id="panelEstadoNote"></div>
+        </div>
+        <div class="info-card">
+          <div class="info-lbl">Nivel</div>
+          <div class="info-val" id="panelNivel">—</div>
+          <div class="info-note">Membresía activa</div>
+        </div>
+        <div class="info-card">
+          <div class="info-lbl">Año de membresía</div>
+          <div class="info-val">1 / 10</div>
+          <div class="info-note">Próxima renovación 2026</div>
+        </div>
+      </div>
+      <div class="section-title">Resumen de Beneficios</div>
+      <div class="ben-grid" id="benResumen"></div>
+      <div class="contact-box">
+        <div class="contact-txt">
+          <h3>¿Necesitas apoyo?</h3>
+          <p>Tu concierge Alpha Drivers está disponible para ti</p>
+        </div>
+        <button class="contact-btn" onclick="showView('contacto',null)">Contactar Concierge</button>
+      </div>
+    </div>
+
+    <!-- MIS BENEFICIOS -->
+    <div class="view" id="view-beneficios">
+      <div class="ben-detail-grid" id="benDetalle"></div>
+    </div>
+
+    <!-- MIS SOLICITUDES -->
+    <div class="view" id="view-solicitudes">
+      <div class="sec-hd">
+        <div class="section-title" style="margin:0">Mis Solicitudes de Beneficios</div>
+        <button class="btn-solicitar" onclick="showView('beneficios',null)">+ Nueva Solicitud</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Beneficio</th><th>Detalle</th><th>Monto</th><th>Fecha</th><th>Estado</th><th>Nota Admin</th></tr></thead>
+          <tbody id="solBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MIS DOCUMENTOS -->
+    <div class="view" id="view-documentos">
+      <div class="section-title">Mis Documentos</div>
+      <div class="docs-list">
+        <div class="doc-row">
+          <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="doc-info"><div class="doc-name">Contrato de Membresía Alpha Drivers</div><div class="doc-meta">PDF · Firmado digitalmente · Enero 2025</div></div>
+          <button class="doc-btn" onclick="toast('Documento enviado a tu correo registrado')">Descargar</button>
+        </div>
+        <div class="doc-row">
+          <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="doc-info"><div class="doc-name">Reglamento del Club — Edición 2025</div><div class="doc-meta">PDF · Actualizado Marzo 2025</div></div>
+          <button class="doc-btn" onclick="toast('Documento enviado a tu correo registrado')">Descargar</button>
+        </div>
+        <div class="doc-row">
+          <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="doc-info"><div class="doc-name">Credencial Digital de Miembro</div><div class="doc-meta">PDF · Válida 2025 · Con código QR</div></div>
+          <button class="doc-btn" onclick="toast('Credencial enviada a tu correo registrado')">Descargar</button>
+        </div>
+        <div class="doc-row">
+          <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="doc-info"><div class="doc-name">Guía de Beneficios y Servicios</div><div class="doc-meta">PDF · Catálogo completo 2025</div></div>
+          <button class="doc-btn" onclick="toast('Documento enviado a tu correo registrado')">Descargar</button>
+        </div>
+        <div class="doc-row">
+          <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="doc-info"><div class="doc-name">Comprobante de Pago — Membresía 2025</div><div class="doc-meta">PDF · Factura fiscal disponible</div></div>
+          <button class="doc-btn" onclick="toast('Comprobante enviado a tu correo registrado')">Descargar</button>
+        </div>
+      </div>
+      <div class="contact-box">
+        <div class="contact-txt"><h3>¿Necesitas un documento adicional?</h3><p>Solicítalo a través de tu concierge personal</p></div>
+        <button class="contact-btn" onclick="showView('contacto',null)">Solicitar Documento</button>
+      </div>
+    </div>
+
+    <!-- EVENTOS -->
+    <div class="view" id="view-eventos">
+      <div class="sec-hd"><div class="section-title" style="margin:0">Próximos Eventos</div></div>
+      <div class="events-list" id="eventosList"></div>
+      <div class="contact-box">
+        <div class="contact-txt"><h3>¿Evento especial?</h3><p>Solicita una experiencia personalizada para ti</p></div>
+        <button class="contact-btn" onclick="showView('contacto',null)">Solicitar Experiencia</button>
+      </div>
+    </div>
+
+    <!-- CONCIERGE -->
+    <div class="view" id="view-contacto">
+      <div class="section-title">Concierge Alpha Drivers</div>
+      <div class="ben-card" style="margin-bottom:16px;padding:36px">
+        <div style="font-family:var(--h);font-size:13px;letter-spacing:.24em;color:rgba(255,255,255,.18);margin-bottom:20px">SERVICIO EXCLUSIVO</div>
+        <div style="font-family:var(--h);font-size:28px;letter-spacing:.1em;color:#fff;margin-bottom:8px">Tu concierge personal</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.38);letter-spacing:.04em;line-height:1.7;margin-bottom:32px">Como miembro Alpha Drivers tienes acceso a un concierge personal disponible para gestionar experiencias, solicitudes y cualquier apoyo relacionado con tu membresía.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
+          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Correo</div><div style="font-size:12px;color:#fff">concierge@alphadrivers.mx</div></div>
+          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">WhatsApp</div><div style="font-size:12px;color:#fff">+52 55 0000 0000</div></div>
+          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:20px"><div style="font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Horario</div><div style="font-size:12px;color:#fff">Lun–Vie · 9am–8pm</div></div>
+        </div>
+        <div style="margin-bottom:20px">
+          <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.36);margin-bottom:8px">Tipo de solicitud</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button class="req-tag active-tag" onclick="selTag(this)">Experiencia especial</button>
+            <button class="req-tag" onclick="selTag(this)">Documentos</button>
+            <button class="req-tag" onclick="selTag(this)">Eventos</button>
+            <button class="req-tag" onclick="selTag(this)">Beneficio en efectivo</button>
+            <button class="req-tag" onclick="selTag(this)">Crédito de servicio</button>
+            <button class="req-tag" onclick="selTag(this)">Otro</button>
+          </div>
+        </div>
+        <div style="margin-bottom:20px">
+          <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.36);margin-bottom:8px">Tu mensaje</div>
+          <textarea id="conciergeMsg" rows="4" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:12px 14px;font-family:var(--b);font-size:12px;outline:none;resize:vertical;transition:border-color .2s" placeholder="Describe lo que necesitas..." onfocus="this.style.borderColor='rgba(255,255,255,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"></textarea>
+        </div>
+        <button class="contact-btn" onclick="sendConcierge()">Enviar Solicitud</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL: ROAD TOUR VIP -->
+<div class="overlay" id="modalRoadTour" onclick="closeOverlay(event,'modalRoadTour')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title">Road Tour VIP</div>
+      <button class="modal-close" onclick="closeModal('modalRoadTour')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Elige la fecha de Road Tour a la que deseas inscribirte. Tu cupo quedará reservado una vez que el equipo Alpha Drivers confirme tu solicitud.</p>
+      <div class="mfield">
+        <label>Fecha disponible</label>
+        <select id="rtFechaSelect"><option value="">Cargando...</option></select>
+      </div>
+      <div class="mfield">
+        <label>Notas adicionales (opcional)</label>
+        <textarea id="rtNotas" rows="2" placeholder="Ej. Llevaré un Porsche 911 GT3RS"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm-out" onclick="closeModal('modalRoadTour')">Cancelar</button>
+      <button class="btn-sm" onclick="submitBenefit('Road Tour VIP')">Enviar Solicitud</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: BENEFICIO EN EFECTIVO -->
+<div class="overlay" id="modalEfectivo" onclick="closeOverlay(event,'modalEfectivo')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title">Beneficio en Efectivo</div>
+      <button class="modal-close" onclick="closeModal('modalEfectivo')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Solicita la dispersión de tu beneficio. El equipo Alpha Drivers procesará el pago en un máximo de 5 días hábiles.</p>
+      <div class="mfield">
+        <label>Método de pago</label>
+        <div style="display:flex;gap:8px">
+          <button class="req-tag active-tag" id="paySpei" onclick="selectPayMethod('spei')">Transferencia SPEI</button>
+          <button class="req-tag" id="payUsdt" onclick="selectPayMethod('usdt')">USDT (Cripto)</button>
+        </div>
+      </div>
+      <div class="mfield">
+        <label id="efMontoLabel">Monto a solicitar (MXN)</label>
+        <input type="number" id="efMonto" placeholder="Ej. 50000" oninput="updateEfBar()"/>
+        <div class="modal-limit-bar"><div class="modal-limit-fill" id="efBar" style="width:0%"></div></div>
+        <div class="hint" id="efHint">Disponible: cargando...</div>
+      </div>
+      <!-- SPEI fields -->
+      <div id="speiFields">
+        <div class="mfield">
+          <label>CLABE interbancaria</label>
+          <input id="efClabe" placeholder="18 dígitos" maxlength="18"/>
+          <div class="hint">La cuenta debe estar a tu nombre</div>
+        </div>
+        <div class="mfield">
+          <label>Banco</label>
+          <select id="efBanco">
+            <option value="">Selecciona tu banco</option>
+            <option>BBVA</option><option>Banorte</option><option>Santander</option><option>HSBC</option>
+            <option>Banamex (Citi)</option><option>Scotiabank</option><option>Inbursa</option><option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <!-- USDT fields -->
+      <div id="usdtFields" style="display:none">
+        <div class="mfield">
+          <label>Red blockchain</label>
+          <select id="efRed">
+            <option>TRC-20 (TRON) — Sin comisión recomendada</option>
+            <option>ERC-20 (Ethereum)</option>
+            <option>BEP-20 (BNB Chain)</option>
+            <option>Polygon (MATIC)</option>
+          </select>
+        </div>
+        <div class="mfield">
+          <label>Dirección de wallet USDT</label>
+          <input id="efWallet" placeholder="Tu dirección de wallet"/>
+          <div class="hint">Verifica que la red coincida exactamente con tu wallet</div>
+        </div>
+        <div class="mfield">
+          <label>Tipo de cambio (referencia)</label>
+          <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.08);padding:12px 14px;font-size:12px;color:rgba(255,255,255,.6)">El monto en USDT se calculará al tipo de cambio del día de la aprobación. <span style="color:var(--green)">El equipo AD te confirmará el equivalente exacto.</span></div>
+        </div>
+      </div>
+      <div class="mfield">
+        <label>Concepto / motivo (opcional)</label>
+        <input id="efConcepto" placeholder="Ej. Gastos de viaje Road Tour"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm-out" onclick="closeModal('modalEfectivo')">Cancelar</button>
+      <button class="btn-sm" onclick="submitBenefit('Beneficio en Efectivo')">Enviar Solicitud</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CRÉDITO DE SERVICIO -->
+<div class="overlay" id="modalServicio" onclick="closeOverlay(event,'modalServicio')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title">Crédito de Servicio</div>
+      <button class="modal-close" onclick="closeModal('modalServicio')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Selecciona el socio donde deseas utilizar tu crédito y el monto a aplicar. El crédito se aplica directo al negocio — no es transferible a efectivo.</p>
+      <div class="mfield">
+        <label>Socio / Taller</label>
+        <select id="svSocio" onchange="updateSvBar()"><option value="">Selecciona un socio...</option></select>
+        <div class="hint" id="svSocioHint"></div>
+      </div>
+      <div class="mfield">
+        <label>Monto a utilizar (MXN)</label>
+        <input type="number" id="svMonto" placeholder="Ej. 8000" oninput="updateSvBar()"/>
+        <div class="modal-limit-bar"><div class="modal-limit-fill" id="svBar" style="width:0%"></div></div>
+        <div class="hint" id="svHint">Crédito restante: cargando...</div>
+      </div>
+      <div class="mfield">
+        <label>Fecha aproximada del servicio</label>
+        <input type="date" id="svFecha"/>
+      </div>
+      <div class="mfield">
+        <label>Descripción del servicio</label>
+        <textarea id="svDesc" rows="2" placeholder="Ej. Servicio mayor 10,000 km + cambio de pastillas"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm-out" onclick="closeModal('modalServicio')">Cancelar</button>
+      <button class="btn-sm" onclick="submitBenefit('Crédito de Servicio')">Enviar Solicitud</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ECOSISTEMA AD -->
+<div class="overlay" id="modalEcosistema" onclick="closeOverlay(event,'modalEcosistema')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title">Ecosistema AD</div>
+      <button class="modal-close" onclick="closeModal('modalEcosistema')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Como miembro fundador tienes una participación del 5% en los ingresos anuales del ecosistema Alpha Drivers. La distribución ocurre automáticamente al cierre de cada año fiscal.</p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px">
+        <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:16px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Tu participación</div><div style="font-family:var(--h);font-size:28px;color:#fff">5%</div></div>
+        <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:16px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Estado</div><div style="font-family:var(--h);font-size:28px;color:var(--green)">Activo</div></div>
+        <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:16px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Próxima distribución</div><div style="font-size:13px;color:#fff;font-weight:500">Dic 2025</div></div>
+        <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:16px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Método</div><div style="font-size:13px;color:#fff;font-weight:500">Transferencia SPEI</div></div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.3);line-height:1.7">Para actualizar tu cuenta CLABE para la distribución, contacta a tu concierge.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm-out" onclick="showView('contacto',null);closeModal('modalEcosistema')">Contactar Concierge</button>
+      <button class="btn-sm" onclick="closeModal('modalEcosistema')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EVENTO DETALLE -->
+<div class="overlay" id="modalEvento" onclick="closeOverlay(event,'modalEvento')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd"><div class="modal-title" id="evModalTitle">Evento</div><button class="modal-close" onclick="closeModal('modalEvento')">×</button></div>
+    <div class="modal-body" id="evModalBody"></div>
+    <div class="modal-foot"><button class="btn-sm" onclick="closeModal('modalEvento')">Cerrar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ── SESSION ───────────────────────────────────────────────────
+(function(){
+  if(localStorage.getItem('ad_role')!=='member') location.replace('login.html?role=member');
+})();
+
+// ── DATA HELPERS ──────────────────────────────────────────────
+const DEFAULT_MEMBER={nombre:'Miembro Alpha',email:'',nivel:'Alpha Premium',numero:'001',ingreso:'Enero 2025',status:'Activo'};
+const SEED_MEMBERS=[
+  {id:'001',name:'Carlos Mendoza',email:'carlos@email.com',city:'Ciudad de México',vehicle:'Porsche 911 GT3RS',nivel:'Alpha Premium',date:'Ene 2025',status:'Activo'},
+  {id:'002',name:'Ricardo Fuentes',email:'rfuentes@email.com',city:'Guadalajara',vehicle:'Ferrari F8 Tributo',nivel:'Alpha Premium',date:'Feb 2025',status:'Activo'},
+  {id:'003',name:'Alejandro Torres',email:'atores@email.com',city:'Monterrey',vehicle:'McLaren 720S',nivel:'Alpha',date:'Mar 2025',status:'Pago Pendiente'},
+  {id:'004',name:'Jorge Villanueva',email:'jvilla@email.com',city:'Ciudad de México',vehicle:'Lamborghini Huracán',nivel:'Alpha Premium',date:'Abr 2025',status:'Activo'},
+];
+function getMembers(){
+  try{
+    const s=localStorage.getItem('ad_members');
+    return s?JSON.parse(s):JSON.parse(JSON.stringify(SEED_MEMBERS));
+  }catch(e){return JSON.parse(JSON.stringify(SEED_MEMBERS));}
+}
+function getMember(){
+  const memberId=localStorage.getItem('ad_member_id');
+  const members=getMembers();
+  if(memberId){
+    const found=members.find(m=>m.id===memberId);
+    if(found) return found;
+  }
+  // fallback: first active member
+  return members.find(m=>m.status==='Activo')||members[0]||DEFAULT_MEMBER;
+}
+function getSocios(){
+  const seed=[
+    {id:'s1',nombre:'Porsche Service Center CDMX',categoria:'Taller Oficial',limite:50000},
+    {id:'s2',nombre:'Ferrari Maserati México',categoria:'Taller Oficial',limite:50000},
+    {id:'s3',nombre:'AutoDetail Elite Polanco',categoria:'Detailing & Estética',limite:15000},
+    {id:'s4',nombre:'Taller McLaren México',categoria:'Taller Oficial',limite:50000},
+    {id:'s5',nombre:'Sushi Ammo Polanco',categoria:'Restaurante',limite:5000},
+    {id:'s6',nombre:'Hyatt Regency CDMX',categoria:'Hospedaje',limite:20000},
+  ];
+  return JSON.parse(localStorage.getItem('ad_socios')||'null')||seed;
+}
+function getRoadTours(){
+  const seed=[
+    {id:'rt1',fecha:'14-15 Jun 2025',ruta:'CDMX → Guadalajara',cupo:20,inscritos:12},
+    {id:'rt2',fecha:'19-20 Jul 2025',ruta:'CDMX → Valle de Bravo',cupo:20,inscritos:6},
+    {id:'rt3',fecha:'23-24 Ago 2025',ruta:'CDMX → Oaxaca',cupo:20,inscritos:2},
+  ];
+  return JSON.parse(localStorage.getItem('ad_road_tours')||'null')||seed;
+}
+function getLimites(){
+  const def={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}};
+  return JSON.parse(localStorage.getItem('ad_limites')||'null')||def;
+}
+function getBenReqs(){return JSON.parse(localStorage.getItem('ad_benefit_requests')||'[]');}
+function saveBenReqs(d){localStorage.setItem('ad_benefit_requests',JSON.stringify(d));}
+function myReqs(){
+  const m=getMember();
+  const name=m.name||m.nombre;
+  const id=m.id||m.numero;
+  return getBenReqs().filter(r=>r.memberId===id||(name&&r.memberName===name));
+}
+function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
+
+// Crédito de servicio usado por este miembro
+function servicioUsado(){
+  return myReqs().filter(r=>r.tipo==='Crédito de Servicio'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
+}
+function efectivoUsado(){
+  return myReqs().filter(r=>r.tipo==='Beneficio en Efectivo'&&r.status!=='Rechazado').reduce((s,r)=>s+(Number(r.monto)||0),0);
+}
+
+// ── BENEFITS CONFIG ───────────────────────────────────────────
+function getBenData(){
+  const m=getMember();
+  const nivel=m.nivel||'Alpha Premium';
+  const lim=getLimites()[nivel]||{efectivo:150000,servicio:50000};
+  const svUsado=servicioUsado();
+  const efUsado=efectivoUsado();
+  const svRest=Math.max(0,lim.servicio-svUsado);
+  const efRest=Math.max(0,lim.efectivo-efUsado);
+  return [
+    {id:'tour',num:'01',title:'Road Tour VIP',desc:'Acceso a todos los Road Tours organizados por Alpha Drivers. Experiencias exclusivas en circuito y carretera con los mejores supercars de México.',val:'1 / 10',unit:'Años completados',pct:10,lbl1:'Año 1',lbl2:'10% completado',tag:'En curso',modal:'modalRoadTour'},
+    {id:'efectivo',num:'02',title:'Beneficio en Efectivo',desc:'Bono anual en efectivo disponible para gastar en lo que prefieras. Se renueva cada año de membresía activa.',val:fmtMXN(efRest),unit:'MXN disponibles',pct:Math.round(efUsado/lim.efectivo*100),lbl1:fmtMXN(efUsado)+' utilizado',lbl2:fmtMXN(efRest)+' restante',tag:'Activo',modal:'modalEfectivo',limite:lim.efectivo,usado:efUsado},
+    {id:'servicio',num:'03',title:'Crédito de Servicio',desc:'Crédito para usar en nuestra red de socios: talleres, detailing, aseguradores, restaurantes y más.',val:fmtMXN(svRest),unit:'MXN en red de socios',pct:Math.round(svUsado/lim.servicio*100),lbl1:fmtMXN(svUsado)+' utilizado',lbl2:fmtMXN(svRest)+' restante',tag:'En uso',modal:'modalServicio',limite:lim.servicio,usado:svUsado},
+    {id:'eco',num:'04',title:'Ecosistema AD',desc:'Participación en el ecosistema Alpha Drivers. Recibes un porcentaje de los ingresos anuales del club como miembro fundador.',val:'5%',unit:'Participación anual compartida',pct:100,lbl1:'Activo',lbl2:'Confirmado',tag:'Confirmado',modal:'modalEcosistema'},
+  ];
+}
+
+// ── EVENTS ────────────────────────────────────────────────────
+const EVENTS=[
+  {mes:'JUN',dia:'14',nombre:'ALPHA DRIVERS Road Tour — Etapa 1',lugar:'Circuito de los Arcos, Guadalajara',tag:'Confirmado',tagClass:'confirmed',desc:'Primera etapa del Road Tour anual. Salida desde CDMX en convoy. Incluye hospedaje y cena de gala.',detalles:['Fecha: 14–15 de Junio 2025','Lugar: Guadalajara, Jalisco','Incluye: Hospedaje, cenas y acceso VIP'],conf:true},
+  {mes:'JUL',dia:'28',nombre:'Supercar Track Day — Socio Exclusivo',lugar:'Autódromo Hermanos Rodríguez, CDMX',tag:'Registrado',tagClass:'confirmed',desc:'Track day privado con sesiones cronometradas e instructores profesionales.',detalles:['Fecha: 28 de Julio 2025','Cupo: 20 autos máximo','Incluye: Instructor, cronometría y lunch'],conf:true},
+  {mes:'OCT',dia:'26',nombre:'F1 Gran Premio de México 2025',lugar:'Autódromo Hermanos Rodríguez, CDMX',tag:'VIP Incluido',tagClass:'vip',desc:'Acceso VIP al Gran Premio de México de Fórmula 1. Paddock Club y hospitalidad privada.',detalles:['Fecha: 24–26 de Octubre 2025','Acceso: Paddock Club VIP','Incluye: Hospitalidad premium y transferes'],conf:false},
+  {mes:'DIC',dia:'06',nombre:'Cena de Gala — Cierre de Año Alpha Drivers',lugar:'Hotel Four Seasons, CDMX',tag:'Exclusivo',tagClass:'vip',desc:'Cena anual de cierre. Reconocimientos, presentación temporada 2026 y networking.',detalles:['Fecha: 6 de Diciembre 2025','Dress code: Black tie','Incluye: Cena, open bar y espectáculo'],conf:false},
+];
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){
+  const m=getMember();
+  const bens=getBenData();
+
+  document.getElementById('sbBadge').textContent='Miembro #'+(m.id||m.numero||'001');
+  document.getElementById('topMemberNum').textContent='Miembro #'+(m.id||m.numero||'001');
+  document.getElementById('memberName').textContent=m.name||m.nombre||'Miembro Alpha';
+  document.getElementById('memberNumLarge').textContent=m.id||m.numero||'001';
+  document.getElementById('memberMeta').textContent=(m.nivel||'Alpha Premium')+' · Miembro activo desde '+(m.date||m.ingreso||'Enero 2025');
+
+  const panelEstado=document.getElementById('panelEstado');
+  const panelNote=document.getElementById('panelEstadoNote');
+  if(m.status==='Activo'){panelEstado.textContent='Activo';panelEstado.style.color='var(--green)';panelNote.textContent='Membresía vigente';panelNote.style.color='var(--green)';}
+  else{panelEstado.textContent=m.status||'Pendiente';panelEstado.style.color='var(--amber)';panelNote.textContent='Contacta al concierge';panelNote.style.color='var(--amber)';}
+  document.getElementById('panelNivel').textContent=m.nivel||'Alpha Premium';
+
+  // Ben resumen (panel)
+  document.getElementById('benResumen').innerHTML=bens.map(b=>`
+    <div class="ben-card">
+      <div class="ben-num">${b.num}</div>
+      <div class="ben-title">${b.title}</div>
+      <div class="ben-val">${b.val}</div>
+      <div class="ben-per">${b.unit}</div>
+      <div class="ben-bar-wrap"><div class="ben-bar" style="width:0%" data-pct="${b.pct}"></div></div>
+      <div class="ben-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
+      <div class="ben-actions">
+        <button class="btn-solicitar" onclick="openBenModal('${b.modal}')">Solicitar</button>
+        <button class="btn-ver" onclick="showView('beneficios',null)">Ver detalle</button>
+      </div>
+    </div>`).join('');
+
+  // Ben detalle (beneficios view)
+  document.getElementById('benDetalle').innerHTML=bens.map(b=>`
+    <div class="ben-detail-card">
+      <div class="bdc-num">${b.num} / 04</div>
+      <div class="bdc-title">${b.title}</div>
+      <div class="bdc-desc">${b.desc}</div>
+      <div class="bdc-val">${b.val}</div>
+      <div class="bdc-unit">${b.unit}</div>
+      <div class="bdc-bar-wrap"><div class="bdc-bar" style="width:0%" data-pct="${b.pct}"></div></div>
+      <div class="bdc-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
+      <div class="bdc-actions">
+        <button class="btn-solicitar" onclick="openBenModal('${b.modal}')">Solicitar beneficio</button>
+        <button class="btn-ver" onclick="showView('solicitudes',null)">Mis solicitudes</button>
+      </div>
+    </div>`).join('');
+
+  // Events
+  const evConf=JSON.parse(localStorage.getItem('ad_ev_confirmed')||'{}');
+  document.getElementById('eventosList').innerHTML=EVENTS.map((ev,i)=>{
+    const done=evConf[i]||ev.conf;
+    return `<div class="event-row">
+      <div class="event-date">${ev.mes}<br>${ev.dia}</div>
+      <div class="event-info"><div class="event-name">${ev.nombre}</div><div class="event-loc">${ev.lugar}</div></div>
+      <div class="event-actions">
+        <span class="event-tag ${ev.tagClass}">${ev.tag}</span>
+        ${done?`<button class="btn-confirm done" disabled>Confirmado</button>`:`<button class="btn-confirm" onclick="confirmEvento(${i})">Confirmar</button>`}
+        <button class="event-tag" style="cursor:pointer" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.45)'" onclick="openEventoModal(${i})">Ver más</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Mis solicitudes
+  renderSolicitudes();
+
+  // Animate bars
+  setTimeout(()=>{
+    document.querySelectorAll('.ben-bar[data-pct],.bdc-bar[data-pct]').forEach(b=>b.style.width=b.dataset.pct+'%');
+  },80);
+}
+
+function renderSolicitudes(){
+  const reqs=myReqs().slice().reverse();
+  document.getElementById('solBody').innerHTML=reqs.length?reqs.map(r=>`
+    <tr>
+      <td>${r.tipo}</td>
+      <td style="font-size:11px;color:rgba(255,255,255,.5)">${r.detalle||'—'}</td>
+      <td>${r.monto?fmtMXN(r.monto):'-'}</td>
+      <td style="font-size:11px">${r.fecha}</td>
+      <td><span class="status ${stClass(r.status)}">${r.status}</span></td>
+      <td style="font-size:11px;color:rgba(255,255,255,.4)">${r.adminNota||'—'}</td>
+    </tr>`).join('')
+    :'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes realizadas — usa el botón "Solicitar" en cada beneficio</td></tr>';
+}
+
+function stClass(s){
+  if(s==='Aprobado') return 'st-active';
+  if(s==='Rechazado') return 'st-rejected';
+  return 'st-pending';
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────
+const VIEW_META={
+  panel:['Bienvenido','Tu membresía Alpha Drivers'],
+  beneficios:['Mis Beneficios','Ciclo 2025 — Beneficios activos'],
+  solicitudes:['Mis Solicitudes','Historial de solicitudes de beneficios'],
+  documentos:['Mis Documentos','Documentos de tu membresía'],
+  eventos:['Próximos Eventos','Calendario exclusivo de miembros'],
+  contacto:['Concierge','Servicio de concierge personal'],
+};
+function showView(id,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const meta=VIEW_META[id]||['',''];
+  document.getElementById('pageTitle').textContent=meta[0];
+  document.getElementById('pageSub').textContent=meta[1];
+  if(id==='solicitudes') renderSolicitudes();
+  setTimeout(()=>{
+    document.querySelectorAll('.ben-bar[data-pct],.bdc-bar[data-pct]').forEach(b=>b.style.width=b.dataset.pct+'%');
+  },80);
+}
+
+// ── BENEFIT MODALS ────────────────────────────────────────────
+function openBenModal(modalId){
+  // Road Tour: populate dates
+  if(modalId==='modalRoadTour'){
+    const tours=getRoadTours();
+    const sel=document.getElementById('rtFechaSelect');
+    sel.innerHTML=tours.map(t=>`<option value="${t.id}">${t.fecha} — ${t.ruta} (${t.cupo-(t.inscritos||0)} lugares)</option>`).join('');
+    if(!tours.length) sel.innerHTML='<option>Sin fechas disponibles por el momento</option>';
+    document.getElementById('rtNotas').value='';
+  }
+  // Efectivo: set limit hint + reset pay method
+  if(modalId==='modalEfectivo'){
+    const m=getMember();const lim=getLimites()[m.nivel||'Alpha Premium']||{efectivo:150000};
+    const usado=efectivoUsado();const rest=Math.max(0,lim.efectivo-usado);
+    document.getElementById('efHint').textContent='Disponible: '+fmtMXN(rest)+' MXN';
+    document.getElementById('efMonto').dataset.max=rest;
+    document.getElementById('efMonto').value='';
+    document.getElementById('efClabe').value='';
+    document.getElementById('efConcepto').value='';
+    document.getElementById('efWallet').value='';
+    document.getElementById('efBar').style.width='0%';
+    selectPayMethod('spei');
+  }
+  // Servicio: populate socios
+  if(modalId==='modalServicio'){
+    const socios=getSocios();
+    const sel=document.getElementById('svSocio');
+    sel.innerHTML='<option value="">Selecciona un socio...</option>'+socios.map(s=>`<option value="${s.id}" data-lim="${s.limite}">${s.nombre} — ${s.categoria} (límite ${fmtMXN(s.limite)})</option>`).join('');
+    const m=getMember();const lim=getLimites()[m.nivel||'Alpha Premium']||{servicio:50000};
+    const usado=servicioUsado();const rest=Math.max(0,lim.servicio-usado);
+    document.getElementById('svHint').textContent='Crédito restante: '+fmtMXN(rest)+' MXN';
+    document.getElementById('svMonto').dataset.max=rest;
+    document.getElementById('svMonto').value='';
+    document.getElementById('svDesc').value='';
+    document.getElementById('svBar').style.width='0%';
+    document.getElementById('svSocioHint').textContent='';
+    const today=new Date().toISOString().split('T')[0];
+    document.getElementById('svFecha').value=today;
+  }
+  openModal(modalId);
+}
+
+let _payMethod='spei';
+function selectPayMethod(m){
+  _payMethod=m;
+  document.getElementById('paySpei').classList.toggle('active-tag',m==='spei');
+  document.getElementById('payUsdt').classList.toggle('active-tag',m==='usdt');
+  document.getElementById('speiFields').style.display=m==='spei'?'':'none';
+  document.getElementById('usdtFields').style.display=m==='usdt'?'':'none';
+  document.getElementById('efMontoLabel').textContent=m==='usdt'?'Monto a solicitar (MXN equivalente)':'Monto a solicitar (MXN)';
+}
+function updateEfBar(){
+  const max=Number(document.getElementById('efMonto').dataset.max)||150000;
+  const val=Number(document.getElementById('efMonto').value)||0;
+  document.getElementById('efBar').style.width=Math.min(100,val/max*100)+'%';
+}
+
+function updateSvBar(){
+  const max=Number(document.getElementById('svMonto').dataset.max)||50000;
+  const val=Number(document.getElementById('svMonto').value)||0;
+  document.getElementById('svBar').style.width=Math.min(100,val/max*100)+'%';
+  const sel=document.getElementById('svSocio');
+  const opt=sel.options[sel.selectedIndex];
+  if(opt&&opt.dataset.lim){
+    document.getElementById('svSocioHint').textContent='Límite de este socio: '+fmtMXN(opt.dataset.lim)+' MXN';
+  }
+}
+
+// ── SUBMIT BENEFIT ────────────────────────────────────────────
+function submitBenefit(tipo){
+  const m=getMember();
+  let detalle='', monto=null, notas='';
+
+  if(tipo==='Road Tour VIP'){
+    const sel=document.getElementById('rtFechaSelect');
+    const opt=sel.options[sel.selectedIndex];
+    if(!opt||!opt.value){alert('Por favor selecciona una fecha');return;}
+    detalle=opt.text;
+    notas=document.getElementById('rtNotas').value.trim();
+  }
+  if(tipo==='Beneficio en Efectivo'){
+    monto=Number(document.getElementById('efMonto').value);
+    const max=Number(document.getElementById('efMonto').dataset.max)||150000;
+    if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
+    if(monto>max){alert('El monto supera tu saldo disponible ('+fmtMXN(max)+' MXN)');return;}
+    if(_payMethod==='spei'){
+      const clabe=document.getElementById('efClabe').value.trim();
+      const banco=document.getElementById('efBanco').value;
+      if(!clabe||clabe.length!==18){alert('Ingresa una CLABE de 18 dígitos');return;}
+      if(!banco){alert('Selecciona tu banco');return;}
+      detalle='SPEI · CLABE ···'+clabe.slice(-4)+' · '+banco;
+    } else {
+      const wallet=document.getElementById('efWallet').value.trim();
+      const red=document.getElementById('efRed').value;
+      if(!wallet){alert('Ingresa tu dirección de wallet USDT');return;}
+      detalle='USDT · '+red.split(' ')[0]+' · ···'+wallet.slice(-6);
+    }
+    notas=(_payMethod==='usdt'?'[USDT] ':'[SPEI] ')+document.getElementById('efConcepto').value.trim();
+  }
+  if(tipo==='Crédito de Servicio'){
+    const sel=document.getElementById('svSocio');
+    const socioId=sel.value;
+    const opt=sel.options[sel.selectedIndex];
+    monto=Number(document.getElementById('svMonto').value);
+    const max=Number(document.getElementById('svMonto').dataset.max)||50000;
+    const socioLim=Number(opt?.dataset?.lim)||Infinity;
+    if(!socioId){alert('Selecciona un socio');return;}
+    if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
+    if(monto>max){alert('El monto supera tu crédito disponible ('+fmtMXN(max)+' MXN)');return;}
+    if(monto>socioLim){alert('El monto supera el límite de este socio ('+fmtMXN(socioLim)+' MXN)');return;}
+    detalle=opt.text.split(' — ')[0];
+    notas=document.getElementById('svDesc').value.trim()+' · Fecha: '+document.getElementById('svFecha').value;
+  }
+
+  const reqs=getBenReqs();
+  const req={
+    id:'br'+Date.now(),
+    memberId:m.id||m.numero||'001',
+    memberName:m.name||m.nombre||'Miembro Alpha',
+    tipo,detalle,monto,notas,
+    status:'Pendiente',
+    fecha:new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}),
+    adminNota:'',
+  };
+  // Guardar detalles completos de pago para el admin
+  if(tipo==='Beneficio en Efectivo'){
+    req.payMethod=_payMethod;
+    if(_payMethod==='spei'){
+      req.payDetails={
+        clabe:document.getElementById('efClabe').value.trim(),
+        banco:document.getElementById('efBanco').value,
+        concepto:document.getElementById('efConcepto').value.trim(),
+      };
+    } else {
+      req.payDetails={
+        wallet:document.getElementById('efWallet').value.trim(),
+        red:document.getElementById('efRed').value,
+        concepto:document.getElementById('efConcepto').value.trim(),
+      };
+    }
+  }
+  if(tipo==='Crédito de Servicio'){
+    req.svFecha=document.getElementById('svFecha').value;
+    req.svDesc=document.getElementById('svDesc').value.trim();
+    const sel=document.getElementById('svSocio');
+    req.svSocioNombre=sel.options[sel.selectedIndex]?.text?.split(' — ')[0]||'';
+  }
+  reqs.push(req);
+  saveBenReqs(reqs);
+
+  // Close all modals
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
+  toast('Solicitud enviada — te notificaremos cuando sea procesada');
+  render();
+}
+
+// ── EVENTS ────────────────────────────────────────────────────
+function confirmEvento(i){
+  const conf=JSON.parse(localStorage.getItem('ad_ev_confirmed')||'{}');
+  conf[i]=true;
+  localStorage.setItem('ad_ev_confirmed',JSON.stringify(conf));
+  render();
+  toast('Asistencia confirmada — Te esperamos');
+}
+function openEventoModal(i){
+  const ev=EVENTS[i];
+  document.getElementById('evModalTitle').textContent=ev.nombre;
+  document.getElementById('evModalBody').innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <div style="flex:1;background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:14px 16px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:6px">Fecha</div><div style="font-size:13px;color:#fff">${ev.mes} ${ev.dia}, 2025</div></div>
+      <div style="flex:1;background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:14px 16px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:6px">Acceso</div><div style="font-size:13px;color:#fff">${ev.tag}</div></div>
+    </div>
+    <div style="margin-bottom:16px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Lugar</div><div style="font-size:12px;color:#fff">${ev.lugar}</div></div>
+    <div style="margin-bottom:20px"><div style="font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">Descripción</div><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.7">${ev.desc}</div></div>
+    <div>${ev.detalles.map(d=>`<div style="font-size:11px;color:rgba(255,255,255,.45);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">· ${d}</div>`).join('')}</div>`;
+  openModal('modalEvento');
+}
+
+// ── CONCIERGE ─────────────────────────────────────────────────
+function selTag(el){document.querySelectorAll('.req-tag').forEach(t=>t.classList.remove('active-tag'));el.classList.add('active-tag');}
+function sendConcierge(){
+  const msg=document.getElementById('conciergeMsg').value.trim();
+  if(!msg){toast('Por favor escribe tu mensaje');return;}
+  document.getElementById('conciergeMsg').value='';
+  toast('Solicitud enviada — Tu concierge te contactará pronto');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+let _tm;
+function toast(msg){
+  const el=document.getElementById('toastEl');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(_tm);_tm=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ── MODAL UTILS ───────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeOverlay(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+
+// ── LOGOUT ────────────────────────────────────────────────────
+function logout(){
+  localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');
+  localStorage.removeItem('ad_session');localStorage.removeItem('ad_member_id');
+  location.href='login.html';
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

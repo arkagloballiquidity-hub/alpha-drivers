@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ALPHA DRIVERS — Drive Your Legacy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<style>
+/* ====================== BASE ====================== */
+:root{
+  --h:'Bebas Neue',sans-serif;
+  --b:'Inter',sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --ease2:cubic-bezier(.16,1,.3,1);
+  --gline:rgba(255,255,255,.07);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:auto}
+body{background:#000;color:#fff;font-family:var(--b);overflow-x:hidden;-webkit-font-smoothing:antialiased;cursor:none}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-track{background:#000}
+::-webkit-scrollbar-thumb{background:#1a1a1a}
+a,button{cursor:none}
+
+/* ====================== GRAIN ====================== */
+body::after{
+  content:'';position:fixed;inset:-10%;z-index:9998;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat:repeat;background-size:180px 180px;
+  opacity:.042;animation:grn .5s steps(3) infinite
+}
+@keyframes grn{0%{transform:translate(0,0)}25%{transform:translate(-4%,-3%)}50%{transform:translate(3%,4%)}75%{transform:translate(-2%,3%)}100%{transform:translate(4%,-2%)}}
+
+/* ====================== LOADER ====================== */
+#ldr{
+  position:fixed;inset:0;z-index:10000;background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity 1s var(--ease),visibility 1s
+}
+#ldr.out{opacity:0;visibility:hidden;pointer-events:none}
+.ldr-logo{font-family:var(--h);font-size:96px;letter-spacing:.06em;color:#fff;line-height:1;margin-bottom:4px}
+.ldr-tag{font-size:9px;font-weight:500;letter-spacing:.52em;text-transform:uppercase;color:rgba(255,255,255,.24);margin-bottom:72px}
+.ldr-track{width:160px;height:1px;background:rgba(255,255,255,.1);position:relative;overflow:hidden}
+.ldr-fill{position:absolute;top:0;left:0;height:100%;width:0%;background:#fff}
+.ldr-pct{font-size:9px;letter-spacing:.32em;color:rgba(255,255,255,.2);margin-top:16px}
+
+/* ====================== CURSOR ====================== */
+#cur{
+  position:fixed;top:0;left:0;width:9px;height:9px;background:#fff;border-radius:50%;
+  pointer-events:none;z-index:9997;mix-blend-mode:difference;will-change:transform;
+  transform:translate(-50%,-50%);transition:width .3s var(--ease),height .3s var(--ease),opacity .3s
+}
+#cur.big{width:52px;height:52px}
+#cur.hide{opacity:0}
+
+/* ====================== PROGRESS ====================== */
+#prog{position:fixed;top:0;left:0;height:1px;width:0%;background:#fff;z-index:600;opacity:.4;transition:width .06s linear}
+
+/* ====================== NAV ====================== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  padding:22px 52px;display:flex;align-items:center;justify-content:space-between;
+  transition:background .5s var(--ease)
+}
+nav.s{background:rgba(0,0,0,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--gline)}
+.nl{font-family:var(--h);font-size:17px;letter-spacing:.24em;color:#fff;text-decoration:none;display:flex;align-items:center;gap:8px}
+.nl svg{width:26px;height:26px}
+.nls{display:flex;gap:36px;list-style:none}
+.nls a{font-size:10px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.5);text-decoration:none;transition:color .2s}
+.nls a:hover{color:#fff}
+.nb{font-size:10px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#000;background:#fff;padding:11px 28px;text-decoration:none;display:inline-block;transition:background .2s}
+.nb:hover{background:#ddd}
+.ob{font-size:10px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#fff;padding:11px 28px;border:1px solid rgba(255,255,255,.28);text-decoration:none;display:inline-block;transition:border-color .25s,background .25s}
+.ob:hover{border-color:rgba(255,255,255,.65);background:rgba(255,255,255,.06)}
+
+/* NAV RIGHT GROUP */
+.nav-right{display:flex;align-items:center;gap:8px}
+
+/* BACKOFFICE BUTTONS */
+.bk-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:9px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(255,255,255,.38);text-decoration:none;
+  padding:8px 12px;border:1px solid rgba(255,255,255,.12);
+  border-radius:2px;transition:color .25s,border-color .25s,background .25s;
+  white-space:nowrap
+}
+.bk-btn:hover{color:rgba(255,255,255,.82);border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.05)}
+.bk-admin svg,.bk-member svg{opacity:.6;transition:opacity .25s}
+.bk-btn:hover svg{opacity:1}
+
+/* ====================== SCRUB CONTAINER ====================== */
+#scrub{
+  position:relative;width:100%;height:100vh;overflow:hidden;background:#000
+}
+
+/* VIDEO */
+#mvid{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center 12%;
+  z-index:1
+}
+
+/* VIDEO OVERLAY — darkens to make text readable */
+#vov{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:rgba(0,0,0,.28)
+}
+
+/* SECTION INDICATOR */
+#sec-ind{
+  position:absolute;right:52px;top:50%;transform:translateY(-50%);
+  z-index:20;display:flex;flex-direction:column;gap:10px
+}
+.si-dot{
+  width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.22);
+  transition:background .4s,transform .4s var(--ease)
+}
+.si-dot.on{background:#fff;transform:scale(1.5)}
+
+/* SCROLL HINT */
+#scroll-hint{
+  position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
+  z-index:20;display:flex;flex-direction:column;align-items:center;gap:10px;
+  opacity:1;transition:opacity .5s
+}
+#scroll-hint.gone{opacity:0}
+.sh-txt{font-size:8px;font-weight:500;letter-spacing:.44em;text-transform:uppercase;color:rgba(255,255,255,.36)}
+.sh-line{width:1px;height:36px;background:linear-gradient(to bottom,rgba(255,255,255,.3),transparent);animation:shpulse 1.8s ease-in-out infinite}
+@keyframes shpulse{0%,100%{opacity:.3;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.2)}}
+
+/* ====================== PANELS ====================== */
+.sp{
+  position:absolute;inset:0;z-index:10;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:100px 8% 80px;
+  opacity:0;pointer-events:none
+}
+.sp.live{pointer-events:auto}
+/* Hero is always visible at scroll=0 */
+#p-hero{opacity:1}
+
+/* Dark backdrop for text blocks */
+.sp-bd{
+  display:inline-flex;flex-direction:column;
+  background:rgba(0,0,0,.52);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:36px 44px 42px;
+  border-left:1px solid rgba(255,255,255,.07)
+}
+/* Hero — sin fondo para que la cara se vea limpia */
+#p-hero .sp-bd{
+  background:transparent;
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border-left:none
+}
+
+/* Typography */
+.sp-tag{font-size:9px;font-weight:500;letter-spacing:.46em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:20px}
+.sp-h1{font-family:var(--h);font-size:clamp(80px,11vw,158px);line-height:.86;color:#fff;margin-bottom:24px}
+.sp-h2{font-family:var(--h);font-size:clamp(56px,7.5vw,110px);line-height:.9;color:#fff;margin-bottom:20px}
+.sp-h3{font-family:var(--h);font-size:clamp(36px,4vw,64px);line-height:.92;color:#fff;margin-bottom:16px}
+.sp-sub{font-size:14px;font-weight:300;line-height:1.85;color:rgba(255,255,255,.5);max-width:480px;margin-bottom:32px}
+.sp-body{font-size:14px;font-weight:300;line-height:1.9;color:rgba(255,255,255,.48);max-width:520px;margin-bottom:32px}
+.sp-ctas{display:flex;gap:14px;flex-wrap:wrap}
+
+/* Panels: Hero stats (right side) */
+.sp-stats{
+  position:absolute;right:52px;bottom:10%;
+  display:flex;flex-direction:column;gap:0
+}
+.sp-si{text-align:right;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.sp-si:last-child{border-bottom:none}
+.sp-sv{font-family:var(--h);font-size:48px;letter-spacing:.02em;line-height:1;color:#fff}
+.sp-sl{font-size:8px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.32);margin-top:2px}
+
+/* Pills */
+.sp-pills{display:flex;flex-wrap:wrap;gap:10px}
+.sp-pill{font-size:9px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.15);padding:10px 18px}
+
+/* Panel: Club — 4 cards */
+.sp-club-wrap{display:grid;grid-template-columns:1fr 1.6fr;gap:60px;align-items:center;width:100%}
+.sp-cards{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.sp-card{
+  background:rgba(0,0,0,.52);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.07);padding:28px 24px
+}
+.sp-cn{font-family:var(--h);font-size:42px;color:rgba(255,255,255,.06);line-height:1;margin-bottom:14px}
+.sp-ctit{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#fff;margin-bottom:8px}
+.sp-cbod{font-size:12px;font-weight:300;line-height:1.72;color:rgba(255,255,255,.4)}
+
+/* Panel: Benefits — 4 stats */
+.sp-ben-wrap{display:grid;grid-template-columns:1fr 1.8fr;gap:60px;align-items:flex-start;width:100%}
+.sp-bens{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.sp-ben{
+  background:rgba(0,0,0,.52);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.07);padding:28px 22px
+}
+.sp-bn{font-family:var(--h);font-size:42px;color:rgba(255,255,255,.06);line-height:1;margin-bottom:10px}
+.sp-btit{font-family:var(--h);font-size:22px;letter-spacing:.04em;color:#fff;margin-bottom:4px}
+.sp-bval{font-family:var(--h);font-size:42px;letter-spacing:.02em;color:#fff;line-height:1;margin-bottom:4px}
+.sp-bper{font-size:9px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.32);margin-bottom:14px}
+.sp-bdsc{font-size:12px;font-weight:300;line-height:1.7;color:rgba(255,255,255,.4)}
+
+/* Panel: Experiences — list */
+.sp-exp-wrap{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;width:100%}
+.sp-list{list-style:none}
+.sp-li{
+  display:flex;align-items:center;gap:20px;
+  padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:14px;font-weight:300;color:rgba(255,255,255,.55)
+}
+.sp-li:first-child{border-top:1px solid rgba(255,255,255,.06)}
+.sp-ld{width:20px;height:1px;background:rgba(255,255,255,.2);flex-shrink:0}
+
+/* Panel: Membership */
+.sp-tier-wrap{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;width:100%}
+.sp-price{font-family:var(--h);font-size:clamp(22px,3vw,38px);letter-spacing:.04em;color:rgba(255,255,255,.36);margin-bottom:28px}
+.sp-feat{list-style:none;margin-bottom:32px}
+.sp-feat li{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 0;font-size:13px;font-weight:300;color:rgba(255,255,255,.52);
+  border-bottom:1px solid rgba(255,255,255,.04)
+}
+.sp-feat li::before{content:'';width:16px;height:1px;background:rgba(255,255,255,.22);flex-shrink:0;margin-top:8px}
+.sp-avail{font-size:9px;letter-spacing:.28em;color:rgba(255,255,255,.18);text-transform:uppercase}
+
+/* Panel: Limited — big counter */
+.sp-ctr-wrap{text-align:center;width:100%;display:flex;flex-direction:column;align-items:center}
+.sp-ctr{font-family:var(--h);font-size:clamp(120px,20vw,260px);line-height:.84;color:#fff;margin-bottom:8px}
+.sp-ctr-lbl{font-size:10px;letter-spacing:.38em;text-transform:uppercase;color:rgba(255,255,255,.34);margin-bottom:40px}
+.sp-ctr-msg{font-family:var(--h);font-size:clamp(32px,4vw,58px);color:#fff;margin-bottom:16px}
+.sp-ctr-sub{font-size:14px;font-weight:300;color:rgba(255,255,255,.42);max-width:440px;text-align:center}
+
+/* Panel: Cars — two full-bleed images */
+#p-cars{padding:0;flex-direction:row}
+.car-duo{display:grid;grid-template-columns:1fr 1fr;width:100%;height:100%;gap:2px}
+.car-img{position:relative;overflow:hidden;height:100%}
+.car-img img{width:100%;height:100%;object-fit:cover;object-position:center;filter:contrast(1.06) brightness(.88)}
+.car-img-lbl{
+  position:absolute;bottom:28px;left:28px;
+  font-family:var(--h);font-size:20px;letter-spacing:.08em;color:#fff;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  padding:10px 16px
+}
+
+/* Panel: CTA */
+#p-cta{align-items:center;text-align:center;justify-content:center}
+#p-cta .sp-bd{align-items:center;text-align:center}
+
+/* ====================== FORM ====================== */
+#form{padding:120px 52px;background:#080808}
+.fi{max-width:780px;margin:0 auto}
+.slbl{font-size:9px;font-weight:500;letter-spacing:.4em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:20px}
+.sh2{font-family:var(--h);font-size:clamp(52px,6.5vw,96px);line-height:.93;color:#fff;margin-bottom:24px}
+.sb{font-size:14px;font-weight:300;line-height:1.82;color:rgba(255,255,255,.42);max-width:480px}
+.gform{
+  background:rgba(255,255,255,.024);border:1px solid var(--gline);
+  padding:64px;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  margin-top:60px;position:relative;overflow:hidden
+}
+.gform::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,rgba(255,255,255,.2),transparent)}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.fgg{display:flex;flex-direction:column}
+.fgg.full{grid-column:1/-1}
+.fgl{font-size:9px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:10px}
+.fgi,.fgs,.fga{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);
+  color:#fff;font-family:var(--b);font-size:14px;font-weight:300;
+  padding:14px 16px;outline:none;appearance:none;-webkit-appearance:none;
+  transition:border-color .2s,background .2s
+}
+.fgi:focus,.fgs:focus,.fga:focus{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.06)}
+.fgi::placeholder,.fga::placeholder{color:rgba(255,255,255,.18)}
+.fgs option{background:#111;color:#fff}
+.fga{min-height:120px;resize:vertical}
+.fbtn{
+  margin-top:32px;width:100%;padding:18px;
+  font-family:var(--b);font-size:10px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;
+  color:#000;background:#fff;border:none;cursor:none;
+  transition:background .2s
+}
+.fbtn:hover{background:#ddd}
+.fbtn:disabled{background:#1a1a1a;color:rgba(255,255,255,.38)}
+
+/* ====================== TICKER ====================== */
+#ticker{overflow:hidden;padding:12px 0;border-top:1px solid var(--gline);border-bottom:1px solid var(--gline);background:#060606}
+.tw{display:flex;white-space:nowrap;animation:tick 24s linear infinite}
+.tw span{font-size:9px;font-weight:500;letter-spacing:.36em;text-transform:uppercase;color:rgba(255,255,255,.32);padding:0 28px}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ====================== FOOTER ====================== */
+footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
+.ftin{max-width:1280px;margin:0 auto}
+.ftlo{font-family:var(--h);font-size:clamp(52px,8vw,96px);letter-spacing:.05em;color:#fff;line-height:1;margin-bottom:10px}
+.fttg{font-family:var(--h);font-size:18px;letter-spacing:.18em;color:rgba(255,255,255,.14);margin-bottom:52px}
+.ftdv{height:1px;background:var(--gline);margin-bottom:36px}
+.ftbt{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.ftm{font-size:10px;color:rgba(255,255,255,.16);letter-spacing:.12em}
+.ftp{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.16)}
+
+/* ====================== RESPONSIVE ====================== */
+@media(max-width:1100px){
+  .sp-bens{grid-template-columns:repeat(2,1fr)}
+  .sp-club-wrap,.sp-ben-wrap,.sp-exp-wrap,.sp-tier-wrap{grid-template-columns:1fr;gap:32px}
+}
+@media(max-width:768px){
+  nav{padding:18px 24px}.nls,.nb{display:none}.bk-btn span{display:none}
+  .sp{padding:80px 6% 60px}
+  .sp-stats{right:24px}
+  .sp-cards{grid-template-columns:1fr}
+  .sp-bens{grid-template-columns:1fr 1fr}
+  .car-duo{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+  .car-img{height:100%}
+  #sec-ind{display:none}
+  #form{padding:80px 24px}
+  .gform{padding:36px 24px}.fg{grid-template-columns:1fr}
+  footer{padding:60px 24px 40px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="ldr">
+  <p class="ldr-logo">AD</p>
+  <p class="ldr-tag">Drive Your Legacy</p>
+  <div class="ldr-track"><div class="ldr-fill" id="ldrFill"></div></div>
+  <p class="ldr-pct" id="ldrPct">0%</p>
+</div>
+
+<!-- CUSTOM CURSOR -->
+<div id="cur"></div>
+
+<!-- PROGRESS BAR -->
+<div id="prog"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nl">
+    <svg viewBox="0 0 28 28" fill="none"><path d="M4 22L14 6l10 16" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16Q14 4 19 16" stroke="#fff" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>
+    A·D
+  </a>
+  <ul class="nls">
+    <li><a href="#form">Apply</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="/admin" class="bk-btn bk-admin" title="Admin Backoffice">
+      <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+      Admin
+    </a>
+    <a href="/portal" class="bk-btn bk-member" title="Member Portal">
+      <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Mi Portal
+    </a>
+    <a href="#form" class="nb">Apply for Membership</a>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN SCRUB EXPERIENCE — toda la página en una sola sección
+     Video frame-por-frame sincronizado con el scroll
+     ============================================================ -->
+<div id="scrub">
+
+  <!-- VIDEO BACKGROUND -->
+  <video id="mvid" muted playsinline preload="auto" aria-hidden="true">
+    <source src="imagenes/hero-video.mp4" type="video/mp4">
+  </video>
+
+  <!-- VIDEO OVERLAY -->
+  <div id="vov"></div>
+
+  <!-- SECTION INDICATOR dots -->
+  <div id="sec-ind">
+    <div class="si-dot on" data-p="hero"></div>
+    <div class="si-dot" data-p="manifesto"></div>
+    <div class="si-dot" data-p="club"></div>
+    <div class="si-dot" data-p="benefits"></div>
+    <div class="si-dot" data-p="experiences"></div>
+    <div class="si-dot" data-p="tiers"></div>
+    <div class="si-dot" data-p="limited"></div>
+    <div class="si-dot" data-p="cta"></div>
+  </div>
+
+  <!-- SCROLL HINT -->
+  <div id="scroll-hint">
+    <span class="sh-txt">Scroll</span>
+    <div class="sh-line"></div>
+  </div>
+
+  <!-- ===== PANEL 1: HERO ===== -->
+  <div class="sp" id="p-hero">
+    <div class="sp-bd">
+      <p class="sp-tag">Private Motorsport Membership Club</p>
+      <h1 class="sp-h1">Drive<br>Your<br>Legacy</h1>
+      <p class="sp-sub">A private club built around precision,<br>performance, access and legacy.</p>
+      <div class="sp-ctas">
+        <a href="#form" class="nb">Apply for Membership</a>
+        <a href="#p-manifesto" class="ob">Explore the Club</a>
+      </div>
+    </div>
+    <div class="sp-stats">
+      <div class="sp-si"><p class="sp-sv" id="hStat1">0</p><p class="sp-sl">Members Worldwide</p></div>
+      <div class="sp-si"><p class="sp-sv" id="hStat2">0</p><p class="sp-sl">Year Term</p></div>
+      <div class="sp-si"><p class="sp-sv" id="hStat3">0</p><p class="sp-sl">Core Benefits</p></div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 2: MANIFESTO ===== -->
+  <div class="sp" id="p-manifesto">
+    <div class="sp-bd">
+      <p class="sp-tag">Manifesto</p>
+      <h2 class="sp-h1">Not Every<br>Driver<br>Belongs Here.</h2>
+      <p class="sp-body">ALPHA DRIVERS is a private club for those who understand that performance is not only measured by speed — but by discipline, presence, precision and the legacy they choose to build.</p>
+      <div class="sp-pills">
+        <span class="sp-pill">Focus</span>
+        <span class="sp-pill">Precision</span>
+        <span class="sp-pill">Performance</span>
+        <span class="sp-pill">Legacy</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 3: THE CLUB ===== -->
+  <div class="sp" id="p-club">
+    <div class="sp-club-wrap">
+      <div class="sp-bd">
+        <p class="sp-tag">The Club</p>
+        <h2 class="sp-h2">Private<br>by Design</h2>
+        <p class="sp-sub">A curated membership for people connected by automotive culture, elite networking and significant experiences.</p>
+      </div>
+      <div class="sp-cards">
+        <div class="sp-card"><div class="sp-cn">01</div><h3 class="sp-ctit">Elite Networking</h3><p class="sp-cbod">A private network of high-level individuals connected by a shared vision of excellence and automotive lifestyle.</p></div>
+        <div class="sp-card"><div class="sp-cn">02</div><h3 class="sp-ctit">Premium Experiences</h3><p class="sp-cbod">Curated automotive experiences designed to deliver meaningful moments — on track, on the road, and beyond.</p></div>
+        <div class="sp-card"><div class="sp-cn">03</div><h3 class="sp-ctit">Tangible Benefits</h3><p class="sp-cbod">Real, measurable benefits delivered annually — from automotive service credits to exclusive experiences.</p></div>
+        <div class="sp-card"><div class="sp-cn">04</div><h3 class="sp-ctit">Legacy Culture</h3><p class="sp-cbod">A community built to create lasting relationships, shared memories and a sense of belonging that endures.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 4: BENEFITS ===== -->
+  <div class="sp" id="p-benefits">
+    <div class="sp-ben-wrap">
+      <div class="sp-bd">
+        <p class="sp-tag">Benefits</p>
+        <h2 class="sp-h2">Privileges of<br>Belonging</h2>
+        <p class="sp-sub">Four core benefits delivered annually to every ALPHA DRIVERS member.</p>
+      </div>
+      <div class="sp-bens">
+        <div class="sp-ben">
+          <div class="sp-bn">01</div>
+          <h3 class="sp-btit">Road Tour</h3>
+          <p class="sp-bval">10 Yrs</p>
+          <p class="sp-bper">VIP · No additional cost</p>
+          <p class="sp-bdsc">Full VIP access to the ALPHA DRIVERS Road Tour for 10 consecutive years — included from day one.</p>
+        </div>
+        <div class="sp-ben">
+          <div class="sp-bn">02</div>
+          <h3 class="sp-btit">Cash Benefit</h3>
+          <p class="sp-bval">$150K</p>
+          <p class="sp-bper">MXN / Year · 10-year term</p>
+          <p class="sp-bdsc">Annual cash benefit of $150,000 MXN. Total over 10 years: $1,500,000 MXN.</p>
+        </div>
+        <div class="sp-ben">
+          <div class="sp-bn">03</div>
+          <h3 class="sp-btit">Service Credit</h3>
+          <p class="sp-bval">$50K</p>
+          <p class="sp-bper">MXN / Year · Partner workshops</p>
+          <p class="sp-bdsc">$50,000 MXN annual credit at every service partner within the ALPHA DRIVERS network.</p>
+        </div>
+        <div class="sp-ben">
+          <div class="sp-bn">04</div>
+          <h3 class="sp-btit">Ecosystem</h3>
+          <p class="sp-bval">5%</p>
+          <p class="sp-bper">Annual · Shared among members</p>
+          <p class="sp-bdsc">Annual participation in ALPHA DRIVERS ecosystem results — 5% distributed proportionally.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 5: EXPERIENCES ===== -->
+  <div class="sp" id="p-experiences">
+    <div class="sp-exp-wrap">
+      <div class="sp-bd">
+        <p class="sp-tag">Experiences</p>
+        <h2 class="sp-h2">Beyond<br>the Road</h2>
+        <p class="sp-sub">ALPHA DRIVERS creates experiences designed to connect machines, people and unforgettable moments.</p>
+      </div>
+      <ul class="sp-list">
+        <li class="sp-li"><span class="sp-ld"></span>ALPHA DRIVERS Road Tour — VIP Access</li>
+        <li class="sp-li"><span class="sp-ld"></span>Supercar Events &amp; Track Days</li>
+        <li class="sp-li"><span class="sp-ld"></span>Lifestyle &amp; Culture Experiences</li>
+        <li class="sp-li"><span class="sp-ld"></span>F1 Mexico City Access</li>
+        <li class="sp-li"><span class="sp-ld"></span>Member-Only Gatherings</li>
+        <li class="sp-li"><span class="sp-ld"></span>Partner Venues &amp; Premium Activations</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 6: MEMBERSHIP ===== -->
+  <div class="sp" id="p-tiers">
+    <div class="sp-tier-wrap">
+      <div class="sp-bd">
+        <p class="sp-tag">Membership</p>
+        <h2 class="sp-h2">Alpha<br>Premium</h2>
+        <p class="sp-price">$1,000,000 MXN</p>
+        <p class="sp-sub">Full membership with all four core benefits. The complete ALPHA DRIVERS experience — every year, for 10 years.</p>
+      </div>
+      <div class="sp-bd">
+        <ul class="sp-feat">
+          <li>VIP Road Tour access — 10 consecutive years</li>
+          <li>Annual cash benefit — $150,000 MXN/year</li>
+          <li>Automotive service credit — $50,000 MXN/year</li>
+          <li>Annual ecosystem participation — 5%</li>
+          <li>F1 Mexico City access</li>
+          <li>Full private member network</li>
+          <li>Priority consideration</li>
+          <li>Limited to 50 members</li>
+        </ul>
+        <p class="sp-avail">Available by application only</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 7: LIMITED ===== -->
+  <div class="sp" id="p-limited">
+    <div class="sp-ctr-wrap">
+      <div class="sp-bd" style="align-items:center;text-align:center;">
+        <p class="sp-tag">Exclusivity</p>
+        <p class="sp-ctr" id="scrubCtr">0</p>
+        <p class="sp-ctr-lbl">Members Worldwide — Limited by Design</p>
+        <p class="sp-ctr-msg">Not Open<br>to Everyone.</p>
+        <p class="sp-ctr-sub">Membership is curated to preserve the quality of the community, the experiences and the value of belonging.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 8 → 9: CTA ===== -->
+  <div class="sp" id="p-cta">
+    <div class="sp-bd" style="align-items:center;text-align:center;">
+      <p class="sp-tag">Apply</p>
+      <h2 class="sp-h1">Enter<br>the Grid</h2>
+      <p class="sp-sub" style="text-align:center;margin:0 auto 32px">Submit your application. Applications are reviewed individually.</p>
+      <a href="#form" class="nb">Request Membership Access</a>
+    </div>
+  </div>
+
+</div><!-- end #scrub -->
+
+<!-- TICKER (after scrub) -->
+<div id="ticker">
+  <div class="tw">
+    <span>Focus</span><span>·</span><span>Precision</span><span>·</span><span>Performance</span><span>·</span><span>Legacy</span><span>·</span><span>Alpha Drivers</span><span>·</span><span>Private by Design</span><span>·</span><span>Drive Your Legacy</span><span>·</span>
+    <span>Focus</span><span>·</span><span>Precision</span><span>·</span><span>Performance</span><span>·</span><span>Legacy</span><span>·</span><span>Alpha Drivers</span><span>·</span><span>Private by Design</span><span>·</span><span>Drive Your Legacy</span><span>·</span>
+  </div>
+</div>
+
+<!-- FORM -->
+<section id="form">
+  <div class="fi">
+    <p class="slbl">Apply</p>
+    <h2 class="sh2">Enter<br>the Grid</h2>
+    <p class="sb">Submit your application. Applications are reviewed individually.</p>
+    <form class="gform" id="applyForm" novalidate>
+      <div class="fg">
+        <div class="fgg"><label class="fgl" for="fn">Full Name</label><input class="fgi" type="text" id="fn" placeholder="Your full name" autocomplete="name" required/></div>
+        <div class="fgg"><label class="fgl" for="em">Email</label><input class="fgi" type="email" id="em" placeholder="your@email.com" autocomplete="email" required/></div>
+        <div class="fgg"><label class="fgl" for="ph">Phone</label><input class="fgi" type="tel" id="ph" placeholder="+52 55 0000 0000"/></div>
+        <div class="fgg"><label class="fgl" for="ci">City</label><input class="fgi" type="text" id="ci" placeholder="Mexico City"/></div>
+        <div class="fgg full"><label class="fgl" for="ve">Current Vehicle / Interest</label><input class="fgi" type="text" id="ve" placeholder="e.g. Porsche 911, track days…"/></div>
+        <div class="fgg full"><label class="fgl" for="mb">Membership Category</label>
+          <select class="fgs" id="mb" required><option value="" disabled selected>Select a category</option><option value="premium">Alpha Premium — $1,000,000 MXN</option></select>
+        </div>
+        <div class="fgg full"><label class="fgl" for="wy">Why do you want to join ALPHA DRIVERS?</label><textarea class="fga" id="wy" placeholder="Tell us about yourself and what drives you…"></textarea></div>
+      </div>
+      <button type="submit" class="fbtn" id="fBtn">Submit Application</button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ftin">
+    <p class="ftlo">ALPHA<br>DRIVERS</p>
+    <p class="fttg">DRIVE YOUR LEGACY</p>
+    <div class="ftdv"></div>
+    <div class="ftbt">
+      <p class="ftm">Private Motorsport Membership Club · Mexico</p>
+      <p class="ftp">Focus · Precision · Performance · Legacy</p>
+      <p class="ftm">© 2026 ALPHA DRIVERS</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   ALPHA DRIVERS — Video Scrubbing Experience
+   Todo el contenido sincronizado frame-por-frame con el video
+   ============================================================ */
+
+window.addEventListener('DOMContentLoaded', () => {
+
+  /* --- LOADER --- */
+  const ldr = document.getElementById('ldr');
+  const ldrFill = document.getElementById('ldrFill');
+  const ldrPct = document.getElementById('ldrPct');
+  let p = 0;
+  const ldrInt = setInterval(() => {
+    p += Math.random() * 16 + 5;
+    if (p >= 100) { p = 100; clearInterval(ldrInt); }
+    ldrFill.style.width = p + '%';
+    ldrPct.textContent = Math.floor(p) + '%';
+    if (p >= 100) setTimeout(() => { ldr.classList.add('out'); initPage(); }, 350);
+  }, 55);
+
+  /* --- CUSTOM CURSOR --- */
+  const cur = document.getElementById('cur');
+  let mx = -100, my = -100, cx = -100, cy = -100;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  document.addEventListener('mouseleave', () => cur.classList.add('hide'));
+  document.addEventListener('mouseenter', () => cur.classList.remove('hide'));
+  document.querySelectorAll('a, button, .nb, .ob, .sp-card, .sp-ben, .car-img').forEach(el => {
+    el.addEventListener('mouseenter', () => cur.classList.add('big'));
+    el.addEventListener('mouseleave', () => cur.classList.remove('big'));
+  });
+  (function curLoop() {
+    cx += (mx - cx) * 0.12; cy += (my - cy) * 0.12;
+    cur.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+    requestAnimationFrame(curLoop);
+  })();
+
+  function initPage() {
+
+    /* --- GSAP + ScrollTrigger --- */
+    gsap.registerPlugin(ScrollTrigger);
+
+    /* --- LENIS smooth scroll --- */
+    let lenis = null;
+    try {
+      if (typeof Lenis !== 'undefined') {
+        lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+        window.__lenis = lenis; // expose for debugging
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add(t => lenis.raf(t * 1000));
+        gsap.ticker.lagSmoothing(0);
+      }
+    } catch(e) {}
+
+    /* --- PROGRESS BAR + NAV --- */
+    const prog = document.getElementById('prog');
+    const nav = document.getElementById('nav');
+    const updateNav = () => {
+      const h = document.documentElement;
+      prog.style.width = (window.scrollY / (h.scrollHeight - h.clientHeight) * 100) + '%';
+      nav.classList.toggle('s', window.scrollY > 60);
+    };
+    if (lenis) {
+      lenis.on('scroll', ({ scroll, limit }) => {
+        prog.style.width = (scroll / limit * 100) + '%';
+        nav.classList.toggle('s', scroll > 60);
+      });
+    } else {
+      window.addEventListener('scroll', updateNav, { passive: true });
+    }
+
+    /* --- HERO STAT COUNTERS (on load) --- */
+    const statsData = [
+      { el: document.getElementById('hStat1'), target: 50, pad: 2 },
+      { el: document.getElementById('hStat2'), target: 10,  pad: 2 },
+      { el: document.getElementById('hStat3'), target: 4,   pad: 2 },
+    ];
+    statsData.forEach(({ el, target, pad }) => {
+      const obj = { val: 0 };
+      gsap.to(obj, {
+        val: target, duration: 2.4, ease: 'power2.out', delay: 0.8,
+        onUpdate: () => { el.textContent = String(Math.floor(obj.val)).padStart(pad, '0'); }
+      });
+    });
+
+    /* --- HERO ENTRANCE — starts visible via CSS #p-hero{opacity:1} --- */
+    document.getElementById('p-hero').classList.add('live');
+
+    /* =====================================================
+       VIDEO SCRUBBING — toda la página sincronizada
+       9 paneles × la duración total del video (10s)
+       ===================================================== */
+    const vid = document.getElementById('mvid');
+    const scrollHint = document.getElementById('scroll-hint');
+
+    // Panel config — scroll progress windows (0–1 = entire 900% scrub):
+    const PC = [
+      { id: 'p-hero',        inAt: 0.00, outAt: 0.13, dot: 0 },
+      { id: 'p-manifesto',   inAt: 0.16, outAt: 0.32, dot: 1 },
+      { id: 'p-club',        inAt: 0.35, outAt: 0.50, dot: 2 },
+      { id: 'p-benefits',    inAt: 0.52, outAt: 0.65, dot: 3 },
+      { id: 'p-experiences', inAt: 0.67, outAt: 0.78, dot: 4 },
+      { id: 'p-tiers',       inAt: 0.80, outAt: 0.89, dot: 5 },
+      { id: 'p-limited',     inAt: 0.89, outAt: 0.94, dot: 6 },
+      { id: 'p-cta',         inAt: 0.94, outAt: 1.00, dot: 7 },
+    ];
+
+    const dots = document.querySelectorAll('.si-dot');
+
+    const setupScrub = () => {
+      const dur = vid.duration || 10;
+
+      // MAIN TIMELINE pinned for 900% of viewport
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: '#scrub',
+          start: 'top top',
+          end: '+=900%',
+          pin: true,
+          scrub: 0.7,
+          anticipatePin: 1,
+          onUpdate: self => {
+            const prog = self.progress;
+            // Hide scroll hint after 3%
+            if (prog > 0.03) scrollHint.classList.add('gone');
+            else scrollHint.classList.remove('gone');
+            // Update nav scroll state
+            nav.classList.toggle('s', prog > 0.01);
+            // Update dots
+            dots.forEach(d => d.classList.remove('on'));
+            for (let i = PC.length - 1; i >= 0; i--) {
+              if (prog >= PC[i].inAt) {
+                if (dots[PC[i].dot]) dots[PC[i].dot].classList.add('on');
+                break;
+              }
+            }
+          }
+        }
+      });
+
+      // VIDEO scrubs full duration
+      tl.to(vid, { currentTime: dur, ease: 'none', duration: 1 }, 0);
+
+      // Overlay subtly adapts — stays lighter so the video stays visible
+      tl.to('#vov', { background: 'rgba(0,0,0,0.42)', ease: 'none', duration: 0.1 }, 0.14);
+      tl.to('#vov', { background: 'rgba(0,0,0,0.32)', ease: 'none', duration: 0.06 }, 0.52);
+      tl.to('#vov', { background: 'rgba(0,0,0,0.48)', ease: 'none', duration: 0.06 }, 0.89);
+
+      // PANELS — each fades in, holds, fades out
+      const TR = 0.025; // transition radius (how fast in/out)
+      PC.forEach(({ id, inAt, outAt }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        // Fade in — hero (inAt=0) starts visible via CSS; skip fade-in to avoid
+        // GSAP overwriting it with the "from" state at progress=0
+        if (inAt > 0) {
+          tl.fromTo(el,
+            { opacity: 0, yPercent: 2 },
+            { opacity: 1, yPercent: 0, ease: 'power2.out', duration: TR },
+            inAt
+          );
+        }
+        // Fade out (only if not the last panel)
+        if (outAt < 1.0) {
+          tl.to(el, { opacity: 0, yPercent: -2, ease: 'power2.in', duration: TR }, outAt - TR);
+        }
+      });
+
+      // Limited counter animates as its panel enters
+      const ctrEl = document.getElementById('scrubCtr');
+      if (ctrEl) {
+        const ctrObj = { val: 0 };
+        tl.to(ctrObj, {
+          val: 50, ease: 'none', duration: 0.05,
+          onUpdate: () => { ctrEl.textContent = Math.floor(ctrObj.val); }
+        }, 0.89);
+      }
+    };
+
+    // Setup scrub once video metadata is ready
+    if (vid.readyState >= 1) {
+      setupScrub();
+    } else {
+      vid.addEventListener('loadedmetadata', setupScrub, { once: true });
+      vid.addEventListener('loadeddata', setupScrub, { once: true });
+      setTimeout(setupScrub, 1000); // fallback
+    }
+
+    /* --- MAGNETIC BUTTONS --- */
+    document.querySelectorAll('.nb').forEach(btn => {
+      btn.addEventListener('mousemove', e => {
+        const r = btn.getBoundingClientRect();
+        btn.style.transform = `translate(${(e.clientX - r.left - r.width/2) * 0.2}px,${(e.clientY - r.top - r.height/2) * 0.2}px)`;
+      });
+      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+    });
+
+    /* --- FORM SECTIONS animate in on scroll --- */
+    gsap.fromTo('#form .fi > *',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: 'power3.out',
+        scrollTrigger: { trigger: '#form', start: 'top 80%' } }
+    );
+    gsap.fromTo('footer .ftin > *',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: 'power3.out',
+        scrollTrigger: { trigger: 'footer', start: 'top 85%' } }
+    );
+
+    /* --- FORM SUBMIT --- */
+    const applyForm = document.getElementById('applyForm');
+    if (applyForm) {
+      applyForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const btn = document.getElementById('fBtn');
+        btn.textContent = "Application Received — We'll be in touch.";
+        btn.disabled = true;
+      });
+    }
+
+  } // end initPage
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>

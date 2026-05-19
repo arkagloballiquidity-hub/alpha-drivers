@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "alpha-drivers",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["serve.py", "7788"],
+      "port": 7788
+    }
+  ]
+}
