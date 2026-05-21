@@ -676,6 +676,7 @@ function statusClass(s){
   return 'st-review';
 }
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
+function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
@@ -745,14 +746,14 @@ function renderView(name){
     document.getElementById('kpiBenReqs').textContent=_BR.filter(r=>r.status==='Pendiente').length;
     document.getElementById('kpiSocios').textContent=_S.length;
     document.getElementById('dashMembersBody').innerHTML=[..._M].reverse().slice(0,4).map(m=>`
-      <tr><td>${m.id}</td><td>${m.name}</td><td>${m.city}</td><td>${m.date}</td>
-      <td><span class="status ${statusClass(m.status)}">${m.status}</span></td></tr>`).join('')
+      <tr><td>${_esc(m.id)}</td><td>${_esc(m.name)}</td><td>${_esc(m.city)}</td><td>${_esc(m.date)}</td>
+      <td><span class="status ${statusClass(m.status)}">${_esc(m.status)}</span></td></tr>`).join('')
       ||'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:24px">Sin miembros aún</td></tr>';
     const pending=_BR.filter(r=>r.status==='Pendiente');
     document.getElementById('dashBenReqsBody').innerHTML=pending.slice(0,5).map(r=>`
-      <tr><td>${r.member_name}</td><td>${r.tipo}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${r.detalle||''}</td><td>${r.monto?fmtMXN(r.monto):'-'}</td>
+      <tr><td>${_esc(r.member_name)}</td><td>${_esc(r.tipo)}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${_esc(r.detalle||'')}</td><td>${r.monto?fmtMXN(r.monto):'-'}</td>
       <td><span class="status st-pending">Pendiente</span></td>
-      <td><button class="tbl-action" onclick="openBenReq('${r.id}')">Revisar →</button></td></tr>`).join('')
+      <td><button class="tbl-action" onclick="openBenReq('${_esc(r.id)}')">Revisar →</button></td></tr>`).join('')
       ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:24px">Sin solicitudes pendientes</td></tr>';
   }
   if(name==='members'){
@@ -760,58 +761,58 @@ function renderView(name){
       const mu=_MU.find(u=>u.member_id===m.id);
       const portalBadge=mu
         ?(mu.active!==false
-            ?`<span class="status st-active" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')" title="${mu.username}">Activo</span>`
-            :`<span class="status st-rejected" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${m.id}')">Inactivo</span>`)
-        :`<button class="tbl-action" onclick="event.stopPropagation();openCreds('${m.id}')">+ Crear</button>`;
+            ?`<span class="status st-active" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${_esc(m.id)}')" title="${_esc(mu.username)}">Activo</span>`
+            :`<span class="status st-rejected" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${_esc(m.id)}')">Inactivo</span>`)
+        :`<button class="tbl-action" onclick="event.stopPropagation();openCreds('${_esc(m.id)}')">+ Crear</button>`;
       const inactive=m.status==='Inactivo';
-      return `<tr class="clickable" onclick="openMember('${m.id}')" style="${inactive?'opacity:.4;':''}">
-        <td>${m.numero||m.id}</td><td>${m.name}</td><td>${m.city}</td><td>${m.vehicle}</td><td>${m.date}</td>
-        <td><span class="status ${statusClass(m.status)}">${m.status}</span></td>
+      return `<tr class="clickable" onclick="openMember('${_esc(m.id)}')" style="${inactive?'opacity:.4;':''}">
+        <td>${_esc(m.numero||m.id)}</td><td>${_esc(m.name)}</td><td>${_esc(m.city)}</td><td>${_esc(m.vehicle)}</td><td>${_esc(m.date)}</td>
+        <td><span class="status ${statusClass(m.status)}">${_esc(m.status)}</span></td>
         <td>${portalBadge}</td>
-        <td><button class="tbl-action" onclick="event.stopPropagation();openMember('${m.id}')">Ver →</button></td>
+        <td><button class="tbl-action" onclick="event.stopPropagation();openMember('${_esc(m.id)}')">Ver →</button></td>
       </tr>`;
     }).join('')||'<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin miembros registrados</td></tr>';
   }
   if(name==='apps'){
     document.getElementById('appsBody').innerHTML=_A.map(a=>`
-      <tr><td>${a.name}</td><td>${a.city}</td><td>${a.vehicle}</td><td>${a.date}</td>
-      <td><span class="status ${statusClass(a.status)}">${a.status}</span></td>
-      <td><button class="tbl-action" onclick="openApp('${a.id}')">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`).join('')
+      <tr><td>${_esc(a.name)}</td><td>${_esc(a.city)}</td><td>${_esc(a.vehicle)}</td><td>${_esc(a.date)}</td>
+      <td><span class="status ${statusClass(a.status)}">${_esc(a.status)}</span></td>
+      <td><button class="tbl-action" onclick="openApp('${_esc(a.id)}')">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`).join('')
       ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes</td></tr>';
   }
   if(name==='ben-reqs'){
     document.getElementById('benReqsBody').innerHTML=_BR.length?[..._BR].map(r=>`
-      <tr><td>${r.member_name}</td><td>${r.tipo}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${r.detalle||''}</td>
-      <td>${r.monto?fmtMXN(r.monto):'-'}</td><td style="font-size:11px">${r.fecha}</td>
-      <td><span class="status ${statusClass(r.status)}">${r.status}</span></td>
-      <td><button class="tbl-action" onclick="openBenReq('${r.id}')">Ver →</button></td></tr>`).join('')
+      <tr><td>${_esc(r.member_name)}</td><td>${_esc(r.tipo)}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${_esc(r.detalle||'')}</td>
+      <td>${r.monto?fmtMXN(r.monto):'-'}</td><td style="font-size:11px">${_esc(r.fecha)}</td>
+      <td><span class="status ${statusClass(r.status)}">${_esc(r.status)}</span></td>
+      <td><button class="tbl-action" onclick="openBenReq('${_esc(r.id)}')">Ver →</button></td></tr>`).join('')
       :'<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes de beneficios</td></tr>';
   }
   if(name==='socios'){
     document.getElementById('sociosBody').innerHTML=_S.map(s=>`
       <tr>
-        <td>${s.nombre}${s.notas?`<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">${s.notas}</div>`:''}</td>
-        <td><span class="status st-review">${s.categoria}</span></td>
+        <td>${_esc(s.nombre)}${s.notas?`<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">${_esc(s.notas)}</div>`:''}</td>
+        <td><span class="status st-review">${_esc(s.categoria)}</span></td>
         <td>${fmtMXN(s.limite)}</td>
-        <td style="font-size:11px;color:rgba(255,255,255,.5)">${s.contacto}</td>
+        <td style="font-size:11px;color:rgba(255,255,255,.5)">${_esc(s.contacto)}</td>
         <td style="white-space:nowrap">
-          <button class="tbl-action" onclick="openEditSocio('${s.id}')">Editar</button>
+          <button class="tbl-action" onclick="openEditSocio('${_esc(s.id)}')">Editar</button>
           <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
-          <button class="tbl-action" style="color:var(--red)" onclick="deleteSocio('${s.id}')">Eliminar</button>
+          <button class="tbl-action" style="color:var(--red)" onclick="deleteSocio('${_esc(s.id)}')">Eliminar</button>
         </td>
       </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin socios</td></tr>';
   }
   if(name==='staff'){
     document.getElementById('staffBody').innerHTML=_STAFF.length?_STAFF.map(u=>`
       <tr>
-        <td>${u.name}</td>
-        <td style="font-family:monospace;font-size:11px;color:rgba(255,255,255,.7)">${u.username}</td>
-        <td><span class="status ${u.role==='admin'?'st-active':'st-review'}" style="text-transform:uppercase">${u.role}</span></td>
+        <td>${_esc(u.name)}</td>
+        <td style="font-family:monospace;font-size:11px;color:rgba(255,255,255,.7)">${_esc(u.username)}</td>
+        <td><span class="status ${u.role==='admin'?'st-active':'st-review'}" style="text-transform:uppercase">${_esc(u.role)}</span></td>
         <td><span class="status ${u.active!==false?'st-active':'st-rejected'}">${u.active!==false?'Activo':'Inactivo'}</span></td>
         <td style="white-space:nowrap">
-          <button class="tbl-action" onclick="toggleStaffActive('${u.id}')">${u.active!==false?'Desactivar':'Activar'}</button>
+          <button class="tbl-action" onclick="toggleStaffActive('${_esc(u.id)}')">${u.active!==false?'Desactivar':'Activar'}</button>
           <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
-          <button class="tbl-action" style="color:var(--red)" onclick="deleteStaff('${u.id}')">Eliminar</button>
+          <button class="tbl-action" style="color:var(--red)" onclick="deleteStaff('${_esc(u.id)}')">Eliminar</button>
         </td>
       </tr>`).join('')
       :'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin usuarios de staff registrados</td></tr>';
@@ -819,23 +820,23 @@ function renderView(name){
   if(name==='pagos'){
     document.getElementById('pagosBody').innerHTML=_PAGOS.length?_PAGOS.map(p=>`
       <tr>
-        <td>${p.member_name||'—'}</td>
-        <td style="font-size:11px;color:rgba(255,255,255,.6)">${p.filename||'Comprobante'}</td>
+        <td>${_esc(p.member_name||'—')}</td>
+        <td style="font-size:11px;color:rgba(255,255,255,.6)">${_esc(p.filename||'Comprobante')}</td>
         <td style="font-size:11px">${fmtDate(p.uploaded_at)}</td>
-        <td><span class="status ${statusClass(p.status)}">${p.status}</span></td>
-        <td><button class="tbl-action" onclick="openPago('${p.id}')">Ver →</button></td>
+        <td><span class="status ${statusClass(p.status)}">${_esc(p.status)}</span></td>
+        <td><button class="tbl-action" onclick="openPago('${_esc(p.id)}')">Ver →</button></td>
       </tr>`).join('')
       :'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin comprobantes</td></tr>';
   }
   if(name==='docs-admin'){
     document.getElementById('docsAdminBody').innerHTML=_DOCS.length?_DOCS.map(d=>`
       <tr>
-        <td>${d.member_name||'—'}</td>
-        <td style="font-size:11px;color:rgba(255,255,255,.6)">${d.filename}</td>
-        <td><span class="status st-review" style="font-size:8px;letter-spacing:.1em">${d.doc_type}</span></td>
+        <td>${_esc(d.member_name||'—')}</td>
+        <td style="font-size:11px;color:rgba(255,255,255,.6)">${_esc(d.filename)}</td>
+        <td><span class="status st-review" style="font-size:8px;letter-spacing:.1em">${_esc(d.doc_type)}</span></td>
         <td style="font-size:11px">${fmtDate(d.uploaded_at)}</td>
-        <td><span class="status ${statusClass(d.status)}">${d.status}</span></td>
-        <td><button class="tbl-action" onclick="openDoc('${d.id}')">Ver →</button></td>
+        <td><span class="status ${statusClass(d.status)}">${_esc(d.status)}</span></td>
+        <td><button class="tbl-action" onclick="openDoc('${_esc(d.id)}')">Ver →</button></td>
       </tr>`).join('')
       :'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin documentos</td></tr>';
   }
@@ -866,10 +867,10 @@ function openMember(id){
   document.getElementById('mdTitle').textContent='Miembro #'+(m.numero||m.id);
   const mu=_MU.find(u=>u.member_id===id);
   document.getElementById('mdBody').innerHTML=`
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Nombre</div><div class="md-val">${m.name}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(m.status)}">${m.status}</span></div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${m.email||'—'}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${m.city||'—'}</div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Vehículo</div><div class="md-val">${m.vehicle||'—'}</div></div><div class="md-item"><div class="md-lbl">Nivel</div><div class="md-val">${m.nivel||'Alpha Premium'}</div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Ingreso</div><div class="md-val">${m.date||'—'}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Nombre</div><div class="md-val">${_esc(m.name)}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(m.status)}">${_esc(m.status)}</span></div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${_esc(m.email||'—')}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${_esc(m.city||'—')}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Vehículo</div><div class="md-val">${_esc(m.vehicle||'—')}</div></div><div class="md-item"><div class="md-lbl">Nivel</div><div class="md-val">${_esc(m.nivel||'Alpha Premium')}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Ingreso</div><div class="md-val">${_esc(m.date||'—')}</div></div></div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Número de Miembro</div>
       <div style="display:flex;gap:10px;align-items:center">
@@ -910,7 +911,7 @@ function openMember(id){
         ?`<div style="display:flex;align-items:center;justify-content:space-between;background:#0d0d0d;border:1px solid rgba(255,255,255,.06);padding:12px 16px;margin-bottom:10px">
             <div>
               <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:3px">USUARIO</div>
-              <div style="font-size:13px;color:#fff;font-weight:500">${mu.username}</div>
+              <div style="font-size:13px;color:#fff;font-weight:500">${_esc(mu.username)}</div>
             </div>
             <span class="status ${mu.active!==false?'st-active':'st-rejected'}">${mu.active!==false?'Activo':'Inactivo'}</span>
           </div>
@@ -948,7 +949,7 @@ function openMember(id){
           <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:6px">Imagen</div>
           <input type="file" id="mdPhotoFile" accept="image/*" style="font-size:10px;color:rgba(255,255,255,.5)"/>
         </div>
-        <button class="btn-sm" onclick="uploadEventPhoto('${id}','${m.name}')">Subir Foto</button>
+        <button class="btn-sm" data-mid="${_esc(id)}" data-mname="${_esc(m.name)}" onclick="uploadEventPhoto(this.dataset.mid,this.dataset.mname)">Subir Foto</button>
       </div>
     </div>`;
   renderMemberPhotos(id);
@@ -1069,9 +1070,9 @@ function openApp(id){
   currentAppId=id;
   const decided=a.status==='Aprobado'||a.status==='Rechazado';
   document.getElementById('appBody').innerHTML=`
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Nombre</div><div class="md-val">${a.name}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(a.status)}">${a.status}</span></div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${a.email}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${a.city}</div></div></div>
-    <div class="md-item" style="margin-bottom:16px"><div class="md-lbl">Vehículo</div><div class="md-val">${a.vehicle}</div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Nombre</div><div class="md-val">${_esc(a.name)}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(a.status)}">${_esc(a.status)}</span></div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${_esc(a.email)}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${_esc(a.city)}</div></div></div>
+    <div class="md-item" style="margin-bottom:16px"><div class="md-lbl">Vehículo</div><div class="md-val">${_esc(a.vehicle)}</div></div>
     <div class="md-item"><div class="md-lbl">Mensaje</div><div class="md-val" style="font-weight:300;line-height:1.6;font-size:12px;color:rgba(255,255,255,.6)">${a.msg}</div></div>`;
   document.getElementById('appRejectBtn').style.display=decided?'none':'';
   document.getElementById('appApproveBtn').style.display=decided?'none':'';
@@ -1146,46 +1147,46 @@ function openBenReq(id){
       payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
         <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Datos de Transferencia SPEI</div>
         <div class="md-row" style="margin-bottom:8px">
-          <div class="md-item"><div class="md-lbl">CLABE</div><div class="md-val" style="font-family:monospace;letter-spacing:.08em">${pd.clabe||'—'}</div></div>
-          <div class="md-item"><div class="md-lbl">Banco</div><div class="md-val">${pd.banco||'—'}</div></div>
+          <div class="md-item"><div class="md-lbl">CLABE</div><div class="md-val" style="font-family:monospace;letter-spacing:.08em">${_esc(pd.clabe||'—')}</div></div>
+          <div class="md-item"><div class="md-lbl">Banco</div><div class="md-val">${_esc(pd.banco||'—')}</div></div>
         </div>
-        ${pd.concepto?`<div class="md-lbl" style="margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${pd.concepto}</div>`:''}</div>`;
+        ${pd.concepto?`<div class="md-lbl" style="margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${_esc(pd.concepto)}</div>`:''}</div>`;
     } else if(r.pay_method==='usdt'||pd.wallet){
       payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
         <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Datos de Pago USDT</div>
-        <div class="md-row" style="margin-bottom:8px"><div class="md-item"><div class="md-lbl">Red Blockchain</div><div class="md-val">${pd.red||'—'}</div></div></div>
+        <div class="md-row" style="margin-bottom:8px"><div class="md-item"><div class="md-lbl">Red Blockchain</div><div class="md-val">${_esc(pd.red||'—')}</div></div></div>
         <div class="md-lbl" style="margin-bottom:4px">Dirección Wallet</div>
-        <div class="md-val" style="font-family:monospace;font-size:11px;letter-spacing:.04em;color:rgba(255,255,255,.85);word-break:break-all">${pd.wallet||'—'}</div>
-        ${pd.concepto?`<div class="md-lbl" style="margin-top:10px;margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${pd.concepto}</div>`:''}</div>`;
+        <div class="md-val" style="font-family:monospace;font-size:11px;letter-spacing:.04em;color:rgba(255,255,255,.85);word-break:break-all">${_esc(pd.wallet||'—')}</div>
+        ${pd.concepto?`<div class="md-lbl" style="margin-top:10px;margin-bottom:4px">Concepto</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${_esc(pd.concepto)}</div>`:''}</div>`;
     }
   } else if(r.tipo==='Crédito de Servicio'){
     payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Detalle del Servicio</div>
       <div class="md-row" style="margin-bottom:8px">
-        <div class="md-item"><div class="md-lbl">Socio / Taller</div><div class="md-val">${r.sv_socio_nombre||r.detalle||'—'}</div></div>
-        <div class="md-item"><div class="md-lbl">Fecha Servicio</div><div class="md-val">${r.sv_fecha||'—'}</div></div>
+        <div class="md-item"><div class="md-lbl">Socio / Taller</div><div class="md-val">${_esc(r.sv_socio_nombre||r.detalle||'—')}</div></div>
+        <div class="md-item"><div class="md-lbl">Fecha Servicio</div><div class="md-val">${_esc(r.sv_fecha||'—')}</div></div>
       </div>
-      ${r.sv_desc?`<div class="md-lbl" style="margin-bottom:4px">Descripción</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.sv_desc}</div>`:''}</div>`;
+      ${r.sv_desc?`<div class="md-lbl" style="margin-bottom:4px">Descripción</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${_esc(r.sv_desc)}</div>`:''}</div>`;
   } else if(r.tipo==='Road Tour VIP'){
     payBlock=`<div style="margin-bottom:16px;padding:16px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Detalle Road Tour</div>
       <div class="md-lbl" style="margin-bottom:4px">Fecha / Ruta</div>
-      <div class="md-val" style="font-size:12px;color:rgba(255,255,255,.85);margin-bottom:10px">${r.detalle||'—'}</div>
-      ${r.notas?`<div class="md-lbl" style="margin-bottom:4px">Notas del miembro</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.notas}</div>`:''}</div>`;
+      <div class="md-val" style="font-size:12px;color:rgba(255,255,255,.85);margin-bottom:10px">${_esc(r.detalle||'—')}</div>
+      ${r.notas?`<div class="md-lbl" style="margin-bottom:4px">Notas del miembro</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${_esc(r.notas)}</div>`:''}</div>`;
   } else if(r.detalle){
-    payBlock=`<div class="md-item" style="margin-bottom:16px"><div class="md-lbl">Detalle</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${r.detalle}</div></div>`;
+    payBlock=`<div class="md-item" style="margin-bottom:16px"><div class="md-lbl">Detalle</div><div class="md-val" style="font-size:12px;color:rgba(255,255,255,.7)">${_esc(r.detalle)}</div></div>`;
   }
   const memberObj=_M.find(m=>m.id===r.member_id);
   document.getElementById('benReqBody').innerHTML=`
     <div class="md-row">
-      <div class="md-item"><div class="md-lbl">Miembro</div><div class="md-val">${r.member_name}</div>
-        ${memberObj?`<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">Miembro #${memberObj.id} · ${memberObj.nivel||'Alpha Premium'}</div>`:''}
+      <div class="md-item"><div class="md-lbl">Miembro</div><div class="md-val">${_esc(r.member_name)}</div>
+        ${memberObj?`<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">Miembro #${_esc(memberObj.id)} · ${_esc(memberObj.nivel||'Alpha Premium')}</div>`:''}
       </div>
-      <div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(r.status)}">${r.status}</span></div></div>
+      <div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(r.status)}">${_esc(r.status)}</span></div></div>
     </div>
     <div class="md-row">
-      <div class="md-item"><div class="md-lbl">Beneficio</div><div class="md-val">${r.tipo}</div></div>
-      <div class="md-item"><div class="md-lbl">Fecha Solicitud</div><div class="md-val">${r.fecha}</div></div>
+      <div class="md-item"><div class="md-lbl">Beneficio</div><div class="md-val">${_esc(r.tipo)}</div></div>
+      <div class="md-item"><div class="md-lbl">Fecha Solicitud</div><div class="md-val">${_esc(r.fecha)}</div></div>
     </div>
     ${r.monto?`<div class="md-row"><div class="md-item"><div class="md-lbl">Monto Solicitado</div><div class="md-val" style="font-family:var(--h);font-size:22px;letter-spacing:.04em">${fmtMXN(r.monto)} MXN</div></div></div>`:''}
     ${payBlock}
@@ -1345,12 +1346,12 @@ function renderRoadTours(){
   el.innerHTML=_RT.map(t=>`
     <div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="flex:1">
-        <div style="font-size:12px;color:#fff;margin-bottom:2px">${t.fecha}</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.4)">${t.ruta} · ${t.inscritos||0}/${t.cupo} inscritos</div>
+        <div style="font-size:12px;color:#fff;margin-bottom:2px">${_esc(t.fecha)}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.4)">${_esc(t.ruta)} · ${Number(t.inscritos||0)}/${Number(t.cupo)} inscritos</div>
       </div>
       <div style="display:flex;gap:10px;white-space:nowrap">
-        <button class="tbl-action" onclick="openEditRoadTour('${t.id}')">Editar</button>
-        <button class="tbl-action" style="color:var(--red)" onclick="deleteRoadTour('${t.id}')">×</button>
+        <button class="tbl-action" onclick="openEditRoadTour('${_esc(t.id)}')">Editar</button>
+        <button class="tbl-action" style="color:var(--red)" onclick="deleteRoadTour('${_esc(t.id)}')">×</button>
       </div>
     </div>`).join('');
 }
@@ -1474,10 +1475,10 @@ function openPago(id){
     }
   }
   document.getElementById('pagoBody').innerHTML=`
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Miembro</div><div class="md-val">${p.member_name||'—'}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(p.status)}">${p.status}</span></div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Archivo</div><div class="md-val" style="font-size:12px">${p.filename||'—'}</div></div><div class="md-item"><div class="md-lbl">Fecha</div><div class="md-val" style="font-size:12px">${fmtDate(p.uploaded_at)}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Miembro</div><div class="md-val">${_esc(p.member_name||'—')}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(p.status)}">${_esc(p.status)}</span></div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Archivo</div><div class="md-val" style="font-size:12px">${_esc(p.filename||'—')}</div></div><div class="md-item"><div class="md-lbl">Fecha</div><div class="md-val" style="font-size:12px">${fmtDate(p.uploaded_at)}</div></div></div>
     ${previewHtml}
-    ${p.admin_nota&&decided?`<div style="padding:12px 16px;background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.15);margin-bottom:16px"><div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(46,196,182,.7);margin-bottom:6px">Nota</div><div style="font-size:12px;color:rgba(255,255,255,.7)">${p.admin_nota}</div></div>`:''}
+    ${p.admin_nota&&decided?`<div style="padding:12px 16px;background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.15);margin-bottom:16px"><div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(46,196,182,.7);margin-bottom:6px">Nota</div><div style="font-size:12px;color:rgba(255,255,255,.7)">${_esc(p.admin_nota)}</div></div>`:''}
     ${decided?'':`<div style="margin-top:12px"><div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Nota (opcional)</div><textarea id="pagoNota" rows="2" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 12px;font-family:var(--b);font-size:12px;outline:none;resize:vertical" placeholder="Ej. Pago confirmado para membresía 2025"></textarea></div>`}`;
   document.getElementById('pagoRejectBtn').style.display=decided?'none':'';
   document.getElementById('pagoApproveBtn').style.display=decided?'none':'';
@@ -1518,11 +1519,11 @@ function openDoc(id){
     }
   }
   document.getElementById('docAdminBody').innerHTML=`
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Miembro</div><div class="md-val">${d.member_name||'—'}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(d.status)}">${d.status}</span></div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Archivo</div><div class="md-val" style="font-size:12px">${d.filename}</div></div><div class="md-item"><div class="md-lbl">Tipo</div><div class="md-val" style="font-size:12px">${d.doc_type}</div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Miembro</div><div class="md-val">${_esc(d.member_name||'—')}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(d.status)}">${_esc(d.status)}</span></div></div></div>
+    <div class="md-row"><div class="md-item"><div class="md-lbl">Archivo</div><div class="md-val" style="font-size:12px">${_esc(d.filename)}</div></div><div class="md-item"><div class="md-lbl">Tipo</div><div class="md-val" style="font-size:12px">${_esc(d.doc_type)}</div></div></div>
     <div class="md-row"><div class="md-item"><div class="md-lbl">Fecha</div><div class="md-val" style="font-size:12px">${fmtDate(d.uploaded_at)}</div></div></div>
     ${previewHtml}
-    ${d.admin_nota&&decided?`<div style="padding:12px 16px;background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.15);margin-bottom:16px"><div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(46,196,182,.7);margin-bottom:6px">Nota</div><div style="font-size:12px;color:rgba(255,255,255,.7)">${d.admin_nota}</div></div>`:''}
+    ${d.admin_nota&&decided?`<div style="padding:12px 16px;background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.15);margin-bottom:16px"><div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(46,196,182,.7);margin-bottom:6px">Nota</div><div style="font-size:12px;color:rgba(255,255,255,.7)">${_esc(d.admin_nota)}</div></div>`:''}
     ${decided?'':`<div style="margin-top:12px"><div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Nota para el miembro (opcional)</div><textarea id="docNota" rows="2" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 12px;font-family:var(--b);font-size:12px;outline:none;resize:vertical" placeholder="Ej. Documento aprobado / Necesitamos mayor resolución"></textarea></div>`}`;
   document.getElementById('docRejectBtn').style.display=decided?'none':'';
   document.getElementById('docReviewBtn').style.display=decided?'none':'';
@@ -1546,12 +1547,12 @@ function renderRequiredDocs(){
   el.innerHTML=_REQ_DOCS.map((d,i)=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
       <div style="flex:1">
-        <div style="font-size:12px;color:${d.activo?'#fff':'rgba(255,255,255,.3)'};font-weight:500">${d.name}</div>
-        ${d.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${d.descripcion}</div>`:''}
+        <div style="font-size:12px;color:${d.activo?'#fff':'rgba(255,255,255,.3)'};font-weight:500">${_esc(d.name)}</div>
+        ${d.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${_esc(d.descripcion)}</div>`:''}
       </div>
       <span class="status ${d.activo?'st-active':'st-rejected'}" style="font-size:8px">${d.activo?'Activo':'Inactivo'}</span>
-      <button class="tbl-action" onclick="toggleRequiredDoc('${d.id}',${!d.activo})">${d.activo?'Desactivar':'Activar'}</button>
-      <button class="tbl-action" style="color:var(--red)" onclick="deleteRequiredDoc('${d.id}')">×</button>
+      <button class="tbl-action" onclick="toggleRequiredDoc('${_esc(d.id)}',${!d.activo})">${d.activo?'Desactivar':'Activar'}</button>
+      <button class="tbl-action" style="color:var(--red)" onclick="deleteRequiredDoc('${_esc(d.id)}')">×</button>
     </div>`).join('');
 }
 async function addRequiredDoc(){
@@ -1605,10 +1606,10 @@ function renderInviteCodes(){
   if(!_ICODES.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);padding:12px 0">Sin códigos generados</div>';return;}
   el.innerHTML=_ICODES.map(c=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-      <code style="font-family:monospace;font-size:14px;font-weight:600;letter-spacing:.12em;color:${c.used?'rgba(255,255,255,.25)':'#fff'};flex:1">${c.code}</code>
+      <code style="font-family:monospace;font-size:14px;font-weight:600;letter-spacing:.12em;color:${c.used?'rgba(255,255,255,.25)':'#fff'};flex:1">${_esc(c.code)}</code>
       <span class="status ${c.used?'st-rejected':'st-active'}" style="font-size:8px">${c.used?'Usado':'Disponible'}</span>
-      ${c.used&&c.used_by?`<span style="font-size:10px;color:rgba(255,255,255,.3)">${c.used_by}</span>`:''}
-      <button class="tbl-action" style="color:var(--red)" onclick="deleteInviteCode('${c.id}')">×</button>
+      ${c.used&&c.used_by?`<span style="font-size:10px;color:rgba(255,255,255,.3)">${_esc(c.used_by)}</span>`:''}
+      <button class="tbl-action" style="color:var(--red)" onclick="deleteInviteCode('${_esc(c.id)}')">×</button>
     </div>`).join('');
 }
 async function generateInviteCodes(){
@@ -1646,17 +1647,17 @@ function renderNiveles(){
   el.innerHTML=niveles.map(([nivel,vals])=>`
     <div style="padding:12px;background:#0a0a0a;border:1px solid rgba(255,255,255,.07);margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:12px;font-weight:600;letter-spacing:.08em;color:#fff">${nivel}</div>
-        <button onclick="deleteNivel('${nivel.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px" title="Eliminar nivel">×</button>
+        <div style="font-size:12px;font-weight:600;letter-spacing:.08em;color:#fff">${_esc(nivel)}</div>
+        <button onclick="deleteNivel(this.dataset.n);event.stopPropagation()" data-n="${_esc(nivel)}" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px" title="Eliminar nivel">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:4px">EFECTIVO (MXN)</div>
-          <input type="number" data-nivel="${nivel}" data-field="efectivo" class="cfg-input nivel-input" value="${vals.efectivo}" style="width:100%;box-sizing:border-box"/>
+          <input type="number" data-nivel="${_esc(nivel)}" data-field="efectivo" class="cfg-input nivel-input" value="${Number(vals.efectivo)}" style="width:100%;box-sizing:border-box"/>
         </div>
         <div>
           <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:4px">CRÉDITO SERVICIO (MXN)</div>
-          <input type="number" data-nivel="${nivel}" data-field="servicio" class="cfg-input nivel-input" value="${vals.servicio}" style="width:100%;box-sizing:border-box"/>
+          <input type="number" data-nivel="${_esc(nivel)}" data-field="servicio" class="cfg-input nivel-input" value="${Number(vals.servicio)}" style="width:100%;box-sizing:border-box"/>
         </div>
       </div>
     </div>`).join('')+
@@ -1706,25 +1707,25 @@ function renderBenTypes(){
     const nivelesHtml=Object.keys(_LIM).map(nivel=>{
       const lim=limsByLevel.find(l=>l.nivel===nivel);
       return `<div>
-        <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.08em;margin-bottom:4px">${nivel}</div>
-        <input type="number" data-bt="${bt.id}" data-nivel="${nivel}" class="cfg-input ben-lim-input" value="${lim?.max_amount||0}" style="width:100%;box-sizing:border-box" placeholder="0"/>
+        <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.08em;margin-bottom:4px">${_esc(nivel)}</div>
+        <input type="number" data-bt="${_esc(bt.id)}" data-nivel="${_esc(nivel)}" class="cfg-input ben-lim-input" value="${Number(lim?.max_amount||0)}" style="width:100%;box-sizing:border-box" placeholder="0"/>
       </div>`;
     }).join('');
     return `<div style="padding:12px;background:#0a0a0a;border:1px solid rgba(255,255,255,.07);margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <div>
-          <div style="font-size:12px;font-weight:600;color:#fff">${bt.name}</div>
-          ${bt.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${bt.descripcion}</div>`:''}
+          <div style="font-size:12px;font-weight:600;color:#fff">${_esc(bt.name)}</div>
+          ${bt.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${_esc(bt.descripcion)}</div>`:''}
         </div>
         <div style="display:flex;gap:10px;align-items:center">
-          <span style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.06em">${bt.unit||'MXN'}</span>
-          <button onclick="deleteBenType('${bt.id}')" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+          <span style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.06em">${_esc(bt.unit||'MXN')}</span>
+          <button onclick="deleteBenType(this.dataset.id)" data-id="${_esc(bt.id)}" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
         </div>
       </div>
       ${Object.keys(_LIM).length?`<div>
-        <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:8px;margin-top:10px">LÍMITES POR NIVEL (${bt.unit||'MXN'})</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;margin-bottom:8px;margin-top:10px">LÍMITES POR NIVEL (${_esc(bt.unit||'MXN')})</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:8px">${nivelesHtml}</div>
-        <button class="btn-sm-out" style="font-size:10px;padding:6px 14px" onclick="saveBenTypeLimits('${bt.id}')">Guardar Límites</button>
+        <button class="btn-sm-out" style="font-size:10px;padding:6px 14px" onclick="saveBenTypeLimits(this.dataset.id)" data-id="${_esc(bt.id)}">Guardar Límites</button>
       </div>`:''}
     </div>`;
   }).join('');
@@ -1784,10 +1785,10 @@ function renderMemberBens(memberId){
   if(!bens.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:8px">Sin beneficios personalizados</div>';return;}
   el.innerHTML=bens.map(b=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
     <div style="flex:1">
-      <div style="font-size:11px;color:#fff;font-weight:500">${b.name} <span style="font-weight:400;color:rgba(255,255,255,.5)">· ${fmtMXN(b.max_amount)} ${b.unit||'MXN'}</span></div>
-      ${b.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35)">${b.descripcion}</div>`:''}
+      <div style="font-size:11px;color:#fff;font-weight:500">${_esc(b.name)} <span style="font-weight:400;color:rgba(255,255,255,.5)">· ${fmtMXN(b.max_amount)} ${_esc(b.unit||'MXN')}</span></div>
+      ${b.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35)">${_esc(b.descripcion)}</div>`:''}
     </div>
-    <button onclick="deleteMemberBenefit('${b.id}','${memberId}')" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+    <button onclick="deleteMemberBenefit(this.dataset.bid,this.dataset.mid)" data-bid="${_esc(b.id)}" data-mid="${_esc(memberId)}" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
   </div>`).join('');
 }
 async function addMemberBenefit(memberId){
@@ -1825,10 +1826,10 @@ function renderMemberReqDocs(memberId){
   if(!docs.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:8px">Sin documentos personalizados — se muestran los documentos globales</div>';return;}
   el.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
     <div style="flex:1">
-      <div style="font-size:11px;color:#fff">${d.name}</div>
-      ${d.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35)">${d.descripcion}</div>`:''}
+      <div style="font-size:11px;color:#fff">${_esc(d.name)}</div>
+      ${d.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35)">${_esc(d.descripcion)}</div>`:''}
     </div>
-    <button onclick="deleteMemberReqDoc('${d.id}','${memberId}')" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+    <button onclick="deleteMemberReqDoc(this.dataset.did,this.dataset.mid)" data-did="${_esc(d.id)}" data-mid="${_esc(memberId)}" style="background:none;border:none;color:rgba(255,50,50,.6);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">×</button>
   </div>`).join('');
 }
 async function addMemberReqDoc(memberId){
