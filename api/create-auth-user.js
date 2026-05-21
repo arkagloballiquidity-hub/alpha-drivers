@@ -71,6 +71,8 @@ export default async function handler(req, res) {
   // Construir email de auth: si ya tiene @, usarlo directo; si no, agregar @alphadrivers.mx
   const authEmail = email.includes('@') ? email.toLowerCase().trim() : `${email.toLowerCase().trim()}@alphadrivers.mx`;
 
+  const { must_change_password } = req.body;
+
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email: authEmail,
     password,
@@ -79,6 +81,7 @@ export default async function handler(req, res) {
       role: safeRole,
       member_id: member_id || null,
       display_name: email.split('@')[0],
+      ...(must_change_password ? { must_change_password: true } : {}),
     },
   });
 

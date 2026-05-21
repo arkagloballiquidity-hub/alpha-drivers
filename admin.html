@@ -580,7 +580,8 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     <div class="modal-body">
       <div class="mfield"><label>Nombre Completo</label><input id="stName" placeholder="Nombre completo"/></div>
       <div class="mfield"><label>Email o Usuario</label><input id="stUsername" placeholder="correo@gmail.com  ó  usuario.apellido" autocomplete="off"/></div>
-      <div class="mfield"><label id="stPasswordLabel">Contraseña</label><input id="stPassword" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/></div>
+      <div id="stPasswordWrap" class="mfield"><label id="stPasswordLabel">Nueva Contraseña (dejar vacío para no cambiar)</label><input id="stPassword" type="password" placeholder="Opcional — mínimo 8 caracteres" autocomplete="new-password"/></div>
+      <div id="stAutoPassNote" style="display:none;font-size:11px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:10px 14px;margin-bottom:12px;letter-spacing:.03em">Se generará una contraseña temporal y se enviará al correo del usuario. Se le pedirá cambiarla al primer inicio de sesión.</div>
       <div class="mfield"><label>Rol</label>
         <select id="stRole">
           <option value="admin">Admin — Acceso completo</option>
@@ -591,6 +592,21 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     <div class="modal-foot">
       <button class="btn-sm-out" onclick="closeModal('modalStaff')">Cancelar</button>
       <button class="btn-sm" onclick="saveStaff()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalForcePassAdmin" style="z-index:9999">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">Cambia tu Contraseña</div></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.7;margin:0 0 20px">Es tu primer inicio de sesión. Establece una contraseña personal para continuar.</p>
+      <div class="mfield"><label>Nueva Contraseña</label><input type="password" id="afpNew" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/></div>
+      <div class="mfield"><label>Confirmar Contraseña</label><input type="password" id="afpConf" placeholder="Repite la nueva contraseña" autocomplete="new-password"/></div>
+      <div id="afpErr" style="display:none;font-size:11px;color:#e63946;background:rgba(230,57,70,.08);border:1px solid rgba(230,57,70,.2);padding:10px 14px;letter-spacing:.04em"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm" onclick="saveStaffForcedPassword()">Guardar y Continuar</button>
     </div>
   </div>
 </div>
@@ -616,11 +632,28 @@ const SB=supabase.createClient(
   localStorage.setItem('ad_role', role);
   localStorage.setItem('ad_user', display);
   document.getElementById('sbUser').textContent=(role==='concierge'?'Concierge: ':'Admin: ')+display;
+  // Forzar cambio de contraseña en primer inicio de sesión
+  if(session.user.user_metadata?.must_change_password){
+    document.getElementById('modalForcePassAdmin').classList.add('open');
+  }
 })();
 async function logout(){
   await SB.auth.signOut();
   localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');localStorage.removeItem('ad_session');
   location.href='/login';
+}
+async function saveStaffForcedPassword(){
+  const nw=document.getElementById('afpNew').value.trim();
+  const cf=document.getElementById('afpConf').value.trim();
+  const errEl=document.getElementById('afpErr');
+  errEl.style.display='none';
+  if(nw.length<8){errEl.textContent='Mínimo 8 caracteres';errEl.style.display='block';return;}
+  if(nw!==cf){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
+  // Actualizar contraseña y quitar flag de cambio obligatorio
+  const {error}=await SB.auth.updateUser({password:nw,data:{must_change_password:false}});
+  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+  document.getElementById('modalForcePassAdmin').classList.remove('open');
+  toast('Contraseña actualizada — bienvenido al panel');
 }
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
@@ -1417,9 +1450,9 @@ let editStaffId=null;
 function openAddStaff(){
   editStaffId=null;
   document.getElementById('staffModalTitle').textContent='Agregar Staff';
-  document.getElementById('stPasswordLabel').textContent='Contraseña';
-  document.getElementById('stPassword').placeholder='Mínimo 8 caracteres';
   document.getElementById('stUsername').disabled=false;
+  document.getElementById('stPasswordWrap').style.display='none';
+  document.getElementById('stAutoPassNote').style.display='block';
   ['stName','stUsername','stPassword'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('stRole').value='concierge';
   openModal('modalStaff');
@@ -1428,11 +1461,13 @@ function openEditStaff(id){
   const u=_STAFF.find(x=>x.id===id);if(!u)return;
   editStaffId=id;
   document.getElementById('staffModalTitle').textContent='Editar Staff';
+  document.getElementById('stPasswordWrap').style.display='block';
   document.getElementById('stPasswordLabel').textContent='Nueva Contraseña (dejar vacío para no cambiar)';
   document.getElementById('stPassword').placeholder='Opcional — mínimo 8 caracteres';
+  document.getElementById('stAutoPassNote').style.display='none';
   document.getElementById('stName').value=u.name||'';
   document.getElementById('stUsername').value=u.username||'';
-  document.getElementById('stUsername').disabled=true; // No cambiar username — es el email de Auth
+  document.getElementById('stUsername').disabled=true;
   document.getElementById('stPassword').value='';
   document.getElementById('stRole').value=u.role||'concierge';
   openModal('modalStaff');
@@ -1469,12 +1504,13 @@ async function saveStaff(){
     if(idx>=0)_STAFF[idx]={..._STAFF[idx],...data};
     toast('Usuario actualizado');
   } else {
-    // Creación: primero crear cuenta en Supabase Auth
-    if(password.length<8){alert('La contraseña debe tener al menos 8 caracteres');return;}
+    // Creación: auto-generar contraseña temporal
+    const arr=new Uint8Array(12);crypto.getRandomValues(arr);
+    const tempPassword='Ad'+Array.from(arr).map(b=>'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'[b%60]).join('');
     const r=await fetch('/api/create-auth-user',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({email:username,password,role})
+      body:JSON.stringify({email:username,password:tempPassword,role,must_change_password:true})
     });
     if(!r.ok){const e=await r.json();alert('Error creando cuenta: '+(e.error||r.status));return;}
     const {user_id}=await r.json();
@@ -1497,10 +1533,10 @@ async function saveStaff(){
         body:JSON.stringify({
           to:username,
           subject:'Acceso al Panel Administrativo — ALPHA DRIVERS',
-          html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="https://alphadrivers.mx/imagenes/logo-ad.png" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Acceso Administrativo</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.4">Hola, ${name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Se ha creado tu acceso al panel administrativo de ALPHA DRIVERS con el rol de <strong style="color:#fff">${roleLabel}</strong>. Usa las siguientes credenciales para iniciar sesión.</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e;margin-bottom:28px"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Correo de acceso</p><p style="font-size:15px;font-weight:600;font-family:monospace;margin:0 0 18px;color:#fff">${username}</p><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Contraseña</p><p style="font-size:13px;color:#aaa;line-height:1.8;margin:0">La contraseña fue establecida por tu administrador. Te recomendamos cambiarla en tu primer inicio de sesión.</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Panel →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
+          html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="https://alphadrivers.mx/imagenes/logo-ad.png" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Acceso Administrativo</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.4">Hola, ${name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Se ha creado tu acceso al panel administrativo de ALPHA DRIVERS con el rol de <strong style="color:#fff">${roleLabel}</strong>. Usa las siguientes credenciales para iniciar sesión — se te pedirá cambiar la contraseña al entrar por primera vez.</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e;margin-bottom:28px"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Correo de acceso</p><p style="font-size:16px;font-weight:600;font-family:monospace;margin:0 0 20px;color:#fff">${username}</p><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Contraseña temporal</p><p style="font-size:18px;font-weight:700;font-family:monospace;margin:0;color:#fff;letter-spacing:.06em">${tempPassword}</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Panel →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
         })
       }).catch(()=>{});
-      toast('Staff creado — correo de acceso enviado a '+username);
+      toast('Staff creado — correo con contraseña temporal enviado a '+username);
     } else {
       toast('Staff creado — ya puede iniciar sesión en el portal');
     }
