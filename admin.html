@@ -902,11 +902,26 @@ function openMember(id){
   currentMemberId=id;
   document.getElementById('mdTitle').textContent='Miembro #'+(m.numero||m.id);
   const mu=_MU.find(u=>u.member_id===id);
+  const nivelOpts=Object.keys(_LIM).concat(['Alpha Premium']).filter((v,i,a)=>a.indexOf(v)===i);
   document.getElementById('mdBody').innerHTML=`
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Nombre</div><div class="md-val">${_esc(m.name)}</div></div><div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(m.status)}">${_esc(m.status)}</span></div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Email</div><div class="md-val">${_esc(m.email||'—')}</div></div><div class="md-item"><div class="md-lbl">Ciudad</div><div class="md-val">${_esc(m.city||'—')}</div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Vehículo</div><div class="md-val">${_esc(m.vehicle||'—')}</div></div><div class="md-item"><div class="md-lbl">Nivel</div><div class="md-val">${_esc(m.nivel||'Alpha Premium')}</div></div></div>
-    <div class="md-row"><div class="md-item"><div class="md-lbl">Ingreso</div><div class="md-val">${_esc(m.date||'—')}</div></div></div>
+    <div style="margin-bottom:16px;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Datos del Miembro</div>
+      <div class="md-row">
+        <div class="md-item"><div class="md-lbl">Nombre</div><input id="mdEditName" value="${_esc(m.name)}" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:7px 10px;font-family:var(--b);font-size:13px;outline:none;box-sizing:border-box"/></div>
+        <div class="md-item"><div class="md-lbl">Email</div><input id="mdEditEmail" value="${_esc(m.email||'')}" placeholder="—" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:7px 10px;font-family:var(--b);font-size:13px;outline:none;box-sizing:border-box"/></div>
+      </div>
+      <div class="md-row">
+        <div class="md-item"><div class="md-lbl">Ciudad</div><input id="mdEditCity" value="${_esc(m.city||'')}" placeholder="—" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:7px 10px;font-family:var(--b);font-size:13px;outline:none;box-sizing:border-box"/></div>
+        <div class="md-item"><div class="md-lbl">Vehículo</div><input id="mdEditVehicle" value="${_esc(m.vehicle||'')}" placeholder="—" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:7px 10px;font-family:var(--b);font-size:13px;outline:none;box-sizing:border-box"/></div>
+      </div>
+      <div class="md-row">
+        <div class="md-item"><div class="md-lbl">Nivel</div><select id="mdEditNivel" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:7px 10px;font-family:var(--b);font-size:13px;outline:none;box-sizing:border-box">${nivelOpts.map(n=>`<option value="${_esc(n)}"${n===(m.nivel||'Alpha Premium')?'selected':''}>${_esc(n)}</option>`).join('')}</select></div>
+        <div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(m.status)}">${_esc(m.status)}</span></div></div>
+      </div>
+      <div style="margin-top:12px;text-align:right">
+        <button class="btn-sm" onclick="saveMemberData('${_esc(id)}')">Guardar Datos</button>
+      </div>
+    </div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Número de Miembro</div>
       <div style="display:flex;gap:10px;align-items:center">
@@ -995,6 +1010,22 @@ function openMember(id){
   document.getElementById('mdDeactivateBtn').style.display=isInactive?'none':'';
   document.getElementById('mdReactivateBtn').style.display=isInactive?'':'none';
   openModal('modalMember');
+}
+async function saveMemberData(id){
+  const name=(document.getElementById('mdEditName').value||'').trim();
+  const email=(document.getElementById('mdEditEmail').value||'').trim();
+  const city=(document.getElementById('mdEditCity').value||'').trim();
+  const vehicle=(document.getElementById('mdEditVehicle').value||'').trim();
+  const nivel=document.getElementById('mdEditNivel').value;
+  if(!name){toast('El nombre no puede estar vacío');return;}
+  const updates={name,email:email||null,city:city||null,vehicle:vehicle||null,nivel};
+  const {error}=await SB.from('members').update(updates).eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  const m=_M.find(x=>x.id===id);
+  if(m){m.name=name;m.email=email||null;m.city=city||null;m.vehicle=vehicle||null;m.nivel=nivel;}
+  document.getElementById('mdTitle').textContent='Miembro #'+((m?.numero)||id);
+  toast('Datos del miembro actualizados');
+  renderView('members');
 }
 async function saveNumero(id){
   const val=(document.getElementById('mdNumero').value||'').trim();
