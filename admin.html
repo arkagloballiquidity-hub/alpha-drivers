@@ -1514,12 +1514,11 @@ async function saveStaff(){
     });
     if(!r.ok){const e=await r.json();alert('Error creando cuenta: '+(e.error||r.status));return;}
     const {user_id}=await r.json();
-    // Insertar en admin_users con auth_user_id
-    const newId='su'+Date.now();
-    const {data:d,error}=await SB.from('admin_users').insert({id:newId,name,username,role,active:true,auth_user_id:user_id}).select().single();
+    // Insertar en admin_users — usar auth_user_id como id (ya es UUID)
+    const {data:d,error}=await SB.from('admin_users').insert({id:user_id,name,username,role,active:true,auth_user_id:user_id}).select().single();
     if(error){
       // Si no existe la columna auth_user_id, insertar sin ella
-      const {data:d2,error:e2}=await SB.from('admin_users').insert({id:newId,name,username,role,active:true}).select().single();
+      const {data:d2,error:e2}=await SB.from('admin_users').insert({id:user_id,name,username,role,active:true}).select().single();
       if(e2){alert('Cuenta Auth creada pero error en DB: '+e2.message);return;}
       _STAFF.push(d2);
     } else {
