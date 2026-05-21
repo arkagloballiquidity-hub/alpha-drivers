@@ -863,10 +863,20 @@ const SB=supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
 );
 
-// ── SESSION ───────────────────────────────────────────────────
-const _MEMBER_ID=localStorage.getItem('ad_member_id');
-(function(){
-  if(localStorage.getItem('ad_role')!=='member') location.replace('/login?role=member');
+// ── SESSION (Supabase Auth — verificación real de JWT) ────────
+let _MEMBER_ID=localStorage.getItem('ad_member_id');
+(async function(){
+  const { data:{ session } } = await SB.auth.getSession();
+  if(!session?.user){ location.replace('/login'); return; }
+  const role = session.user.user_metadata?.role || '';
+  if(role !== 'member'){ location.replace('/login'); return; }
+  // Sincronizar member_id desde el JWT por si localStorage fue borrado
+  const mid = session.user.user_metadata?.member_id;
+  if(mid && !_MEMBER_ID){ _MEMBER_ID = mid; localStorage.setItem('ad_member_id', mid); }
+  if(!_MEMBER_ID){ location.replace('/login'); return; }
+  const display = session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || '';
+  localStorage.setItem('ad_role', 'member');
+  localStorage.setItem('ad_user', display);
 })();
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
@@ -1764,7 +1774,8 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeOverlay(e,id){if(e.target===document.getElementById(id))closeModal(id);}
 
 // ── LOGOUT ────────────────────────────────────────────────────
-function logout(){
+async function logout(){
+  await SB.auth.signOut();
   localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');
   localStorage.removeItem('ad_session');localStorage.removeItem('ad_member_id');
   location.href='/login';
