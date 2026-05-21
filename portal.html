@@ -868,12 +868,12 @@ let _MEMBER_ID=null; // Siempre desde JWT, nunca desde localStorage sin verifica
 (async function(){
   const { data:{ session } } = await SB.auth.getSession();
   if(!session?.user){ location.replace('/login'); return; }
-  // Usar app_metadata primero (no escribible por usuario), fallback a user_metadata
-  const meta = session.user.app_metadata || session.user.user_metadata || {};
+  // SOLO app_metadata (escribible únicamente por service role — previene IDOR)
+  const meta = session.user.app_metadata || {};
   const role = meta.role || '';
   if(role !== 'member'){ location.replace('/login'); return; }
-  // member_id siempre del JWT — nunca desde localStorage (previene IDOR)
-  const mid = meta.member_id || session.user.user_metadata?.member_id;
+  // member_id SOLO desde app_metadata — user_metadata es escribible por el usuario (IDOR)
+  const mid = meta.member_id;
   if(!mid){ location.replace('/login'); return; }
   _MEMBER_ID = mid;
   localStorage.setItem('ad_member_id', mid); // solo para referencia, nunca se usa sin JWT
@@ -928,6 +928,12 @@ async function loadAll(){
   if(ccRes.data?.length){ccRes.data.forEach(r=>{_cc[r.key]=r.value;});}
   const eEl=document.getElementById('ccEmail');const wEl=document.getElementById('ccWhatsapp');const hEl=document.getElementById('ccHorario');
   if(eEl)eEl.textContent=_cc.email;if(wEl)wEl.textContent=_cc.whatsapp;if(hEl)hEl.textContent=_cc.horario;
+  // Bloquear acceso si el usuario está inactivo (VULN-07)
+  if(_memberUser && _memberUser.active === false){
+    await SB.auth.signOut();
+    location.replace('/login');
+    return;
+  }
   // Force password change if flagged
   if(_memberUser?.must_change_password){
     document.getElementById('modalForcePass').classList.add('open');
