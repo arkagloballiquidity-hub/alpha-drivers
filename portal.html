@@ -864,17 +864,20 @@ const SB=supabase.createClient(
 );
 
 // ── SESSION (Supabase Auth — verificación real de JWT) ────────
-let _MEMBER_ID=localStorage.getItem('ad_member_id');
+let _MEMBER_ID=null; // Siempre desde JWT, nunca desde localStorage sin verificar
 (async function(){
   const { data:{ session } } = await SB.auth.getSession();
   if(!session?.user){ location.replace('/login'); return; }
-  const role = session.user.user_metadata?.role || '';
+  // Usar app_metadata primero (no escribible por usuario), fallback a user_metadata
+  const meta = session.user.app_metadata || session.user.user_metadata || {};
+  const role = meta.role || '';
   if(role !== 'member'){ location.replace('/login'); return; }
-  // Sincronizar member_id desde el JWT por si localStorage fue borrado
-  const mid = session.user.user_metadata?.member_id;
-  if(mid && !_MEMBER_ID){ _MEMBER_ID = mid; localStorage.setItem('ad_member_id', mid); }
-  if(!_MEMBER_ID){ location.replace('/login'); return; }
-  const display = session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || '';
+  // member_id siempre del JWT — nunca desde localStorage (previene IDOR)
+  const mid = meta.member_id || session.user.user_metadata?.member_id;
+  if(!mid){ location.replace('/login'); return; }
+  _MEMBER_ID = mid;
+  localStorage.setItem('ad_member_id', mid); // solo para referencia, nunca se usa sin JWT
+  const display = meta.display_name || session.user.email?.split('@')[0] || '';
   localStorage.setItem('ad_role', 'member');
   localStorage.setItem('ad_user', display);
 })();
