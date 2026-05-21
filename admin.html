@@ -604,13 +604,23 @@ const SB=supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
 );
 
-// ── AUTH ──────────────────────────────────────────────────────
-(function(){
-  const role=localStorage.getItem('ad_role');
-  if(role!=='admin'&&role!=='concierge'){location.replace('/login');}
-  document.getElementById('sbUser').textContent=(role==='concierge'?'Concierge: ':'Admin: ')+localStorage.getItem('ad_user');
+// ── AUTH (Supabase Auth — verificación real de sesión) ────────
+(async function(){
+  const { data:{ session } } = await SB.auth.getSession();
+  if(!session?.user){ location.replace('/login'); return; }
+  const role = session.user.user_metadata?.role || '';
+  if(!['admin','concierge','staff'].includes(role)){ location.replace('/login'); return; }
+  // Refrescar localStorage con datos del JWT real
+  const display = session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'admin';
+  localStorage.setItem('ad_role', role);
+  localStorage.setItem('ad_user', display);
+  document.getElementById('sbUser').textContent=(role==='concierge'?'Concierge: ':'Admin: ')+display;
 })();
-function logout(){localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');localStorage.removeItem('ad_session');location.href='/login';}
+async function logout(){
+  await SB.auth.signOut();
+  localStorage.removeItem('ad_role');localStorage.removeItem('ad_user');localStorage.removeItem('ad_session');
+  location.href='/login';
+}
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
 let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_STAFF=[],_PAGOS=[],_DOCS=[],_ICODES=[],
@@ -1081,10 +1091,18 @@ async function approveApp(){
   const {data:d,error:e2}=await SB.from('members').insert(member).select().single();
   if(e2){alert('Error al crear miembro: '+e2.message);return;}
   _M.push(d);
-  // Auto-generate credentials
+  // Auto-generate credentials via Supabase Auth (contraseña hasheada)
   const username=a.email.toLowerCase().trim();
   const password='Alpha'+Math.floor(1000+Math.random()*9000)+'!';
-  const {data:mu,error:e3}=await SB.from('member_users').insert({member_id:newId,username,password,active:true,must_change_password:true}).select().single();
+  const { data:{ session:_s } } = await SB.auth.getSession();
+  const authRes = await fetch('/api/create-auth-user',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+(_s?.access_token||'')},
+    body:JSON.stringify({email:username,password,member_id:newId,role:'member'})
+  });
+  const authData = await authRes.json();
+  const authUserId = authData.user_id || null;
+  const {data:mu,error:e3}=await SB.from('member_users').insert({member_id:newId,username,auth_user_id:authUserId,active:true,must_change_password:true}).select().single();
   if(!e3&&mu)_MU.push(mu);
   // Send welcome email with credentials
   const logoUrl='https://alphadrivers.mx/imagenes/logo-ad.png';
@@ -1204,26 +1222,49 @@ function openCreds(memberId){
 }
 function autoGenCreds(){
   const m=_M.find(x=>x.id===credsMemberId);if(!m)return;
-  const base=m.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'.');
-  document.getElementById('crUser').value=base;
+  // Usuario = email del miembro (Supabase Auth usa email)
+  document.getElementById('crUser').value=m.email||'';
   document.getElementById('crPass').value='Alpha'+Math.floor(1000+Math.random()*9000)+'!';
 }
 async function saveCreds(){
-  const username=document.getElementById('crUser').value.trim().toLowerCase().replace(/\s/g,'');
+  const username=document.getElementById('crUser').value.trim().toLowerCase();
   const password=document.getElementById('crPass').value.trim();
-  if(!username){alert('El usuario es requerido');return;}
+  if(!username){alert('El correo del miembro es requerido');return;}
   if(password.length<6){alert('La contraseña debe tener al menos 6 caracteres');return;}
-  const dup=_MU.find(u=>u.username===username&&u.member_id!==credsMemberId);
-  if(dup){alert('Ese usuario ya está en uso por otro miembro');return;}
+  const { data:{ session:_s } } = await SB.auth.getSession();
+  const token = _s?.access_token||'';
   const existing=_MU.find(u=>u.member_id===credsMemberId);
-  if(existing){
-    const {error}=await SB.from('member_users').update({username,password,active:true,must_change_password:true}).eq('member_id',credsMemberId);
+  if(existing?.auth_user_id){
+    // Actualizar contraseña del usuario Auth existente
+    const r=await fetch('/api/update-auth-password',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({user_id:existing.auth_user_id,password})
+    });
+    const rd=await r.json();
+    if(!r.ok){alert('Error: '+rd.error);return;}
+    const {error}=await SB.from('member_users').update({username,active:true,must_change_password:true}).eq('member_id',credsMemberId);
     if(error){alert('Error: '+error.message);return;}
-    existing.username=username;existing.password=password;existing.active=true;existing.must_change_password=true;
+    existing.username=username;existing.active=true;existing.must_change_password=true;
   } else {
-    const {data:d,error}=await SB.from('member_users').insert({member_id:credsMemberId,username,password,active:true,must_change_password:true}).select().single();
-    if(error){alert('Error: '+error.message);return;}
-    _MU.push(d);
+    // Crear nuevo usuario Auth
+    const r=await fetch('/api/create-auth-user',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({email:username,password,member_id:credsMemberId,role:'member'})
+    });
+    const rd=await r.json();
+    if(!r.ok){alert('Error: '+rd.error);return;}
+    const authUserId=rd.user_id||null;
+    if(existing){
+      const {error}=await SB.from('member_users').update({username,auth_user_id:authUserId,active:true,must_change_password:true}).eq('member_id',credsMemberId);
+      if(error){alert('Error: '+error.message);return;}
+      existing.username=username;existing.auth_user_id=authUserId;existing.active=true;existing.must_change_password=true;
+    } else {
+      const {data:d,error}=await SB.from('member_users').insert({member_id:credsMemberId,username,auth_user_id:authUserId,active:true,must_change_password:true}).select().single();
+      if(error){alert('Error: '+error.message);return;}
+      _MU.push(d);
+    }
   }
   // Send welcome email via Resend
   const m=_M.find(x=>x.id===credsMemberId);

@@ -81,71 +81,61 @@ body{background:#080808;color:#fff;font-family:var(--b);min-height:100vh;display
 </div>
 
 <script>
-const SB=supabase.createClient(
+// ── SUPABASE AUTH ─────────────────────────────────────────────
+const SB = supabase.createClient(
   'https://fggchwkbvelqiofkojqn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
 );
 
+// Si ya hay sesión activa, redirigir directo
+(async () => {
+  const { data: { session } } = await SB.auth.getSession();
+  if (session?.user) {
+    const role = session.user.user_metadata?.role || 'member';
+    location.replace(['admin','concierge','staff'].includes(role) ? '/admin' : '/portal');
+  }
+})();
+
 document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 async function doLogin() {
-  const user = document.getElementById('user').value.trim().toLowerCase();
+  const raw  = document.getElementById('user').value.trim().toLowerCase();
   const pass = document.getElementById('pass').value;
   const btn  = document.getElementById('loginBtn');
   const err  = document.getElementById('errMsg');
 
   err.classList.remove('show');
-
-  // Admin hardcoded
-  if (user === 'admin' && pass === 'alpha2025') {
-    btn.classList.add('loading'); btn.disabled = true;
-    localStorage.setItem('ad_role', 'admin');
-    localStorage.setItem('ad_user', 'admin');
-    localStorage.setItem('ad_session', Date.now());
-    setTimeout(() => { location.href = '/admin'; }, 700);
-    return;
-  }
+  if (!raw || !pass) { err.classList.add('show'); return; }
 
   btn.classList.add('loading'); btn.disabled = true;
 
-  // Check staff users (admin_users table)
-  const { data: su } = await SB
-    .from('admin_users')
-    .select('*')
-    .eq('username', user)
-    .eq('password', pass)
-    .eq('active', true)
-    .maybeSingle();
+  // Si el usuario no contiene @ asumimos que es staff con usuario corto
+  // y le agregamos @alphadrivers.mx para Supabase Auth
+  const email = raw.includes('@') ? raw : raw + '@alphadrivers.mx';
 
-  if (su) {
-    localStorage.setItem('ad_role', su.role);
-    localStorage.setItem('ad_user', su.username);
-    localStorage.setItem('ad_session', Date.now());
-    setTimeout(() => { location.href = '/admin'; }, 700);
+  const { data, error } = await SB.auth.signInWithPassword({ email, password: pass });
+
+  if (error || !data?.user) {
+    btn.classList.remove('loading'); btn.disabled = false;
+    err.classList.add('show');
+    document.getElementById('pass').value = '';
     return;
   }
 
-  // Check member credentials
-  const { data: mu, error } = await SB
-    .from('member_users')
-    .select('*')
-    .eq('username', user)
-    .eq('password', pass)
-    .eq('active', true)
-    .maybeSingle();
+  const role     = data.user.user_metadata?.role || 'member';
+  const memberId = data.user.user_metadata?.member_id;
+  // Nombre de display: parte antes del @ si es email real, o el raw si es usuario corto
+  const display  = raw.includes('@') ? raw.split('@')[0] : raw;
 
-  if (mu && !error) {
-    localStorage.setItem('ad_role', 'member');
-    localStorage.setItem('ad_user', user);
-    localStorage.setItem('ad_member_id', mu.member_id);
-    localStorage.setItem('ad_session', Date.now());
-    setTimeout(() => { location.href = '/portal'; }, 700);
-    return;
-  }
+  // Mantener localStorage para compatibilidad con portal/admin actuales
+  localStorage.setItem('ad_role',    role);
+  localStorage.setItem('ad_user',    display);
+  localStorage.setItem('ad_session', Date.now());
+  if (memberId) localStorage.setItem('ad_member_id', memberId);
 
-  btn.classList.remove('loading'); btn.disabled = false;
-  err.classList.add('show');
-  document.getElementById('pass').value = '';
+  setTimeout(() => {
+    location.href = ['admin','concierge','staff'].includes(role) ? '/admin' : '/portal';
+  }, 700);
 }
 </script>
 </body>
