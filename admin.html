@@ -476,7 +476,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
       </div>
       <div class="mfield">
         <label>Contraseña</label>
-        <input id="crPass" type="text" placeholder="Mínimo 6 caracteres" autocomplete="off"/>
+        <input id="crPass" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
       </div>
       <button style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.35);background:none;border:none;cursor:pointer;padding:0;margin-bottom:18px;transition:color .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.35)'" onclick="autoGenCreds()">↻ Generar automáticamente</button>
       <div style="background:rgba(46,196,182,.06);border:1px solid rgba(46,196,182,.18);padding:14px 16px;font-size:11px;color:rgba(255,255,255,.45);line-height:1.7">
@@ -580,7 +580,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     <div class="modal-body">
       <div class="mfield"><label>Nombre Completo</label><input id="stName" placeholder="Nombre completo"/></div>
       <div class="mfield"><label>Usuario (para iniciar sesión)</label><input id="stUsername" placeholder="usuario.apellido" autocomplete="off"/></div>
-      <div class="mfield"><label>Contraseña</label><input id="stPassword" type="text" placeholder="Mínimo 6 caracteres" autocomplete="off"/></div>
+      <div class="mfield"><label>Contraseña</label><input id="stPassword" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/></div>
       <div class="mfield"><label>Rol</label>
         <select id="stRole">
           <option value="admin">Admin — Acceso completo</option>
@@ -1093,7 +1093,7 @@ async function approveApp(){
   _M.push(d);
   // Auto-generate credentials via Supabase Auth (contraseña hasheada)
   const username=a.email.toLowerCase().trim();
-  const password='Alpha'+Math.floor(1000+Math.random()*9000)+'!';
+  const arr=new Uint8Array(12);crypto.getRandomValues(arr);const password='Ad'+Array.from(arr).map(b=>'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'[b%60]).join('');
   const { data:{ session:_s } } = await SB.auth.getSession();
   const authRes = await fetch('/api/create-auth-user',{
     method:'POST',
@@ -1111,7 +1111,7 @@ async function approveApp(){
     body:JSON.stringify({
       to:a.email,
       subject:'Bienvenido a ALPHA DRIVERS — Tu membresía ha sido aprobada',
-      html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="${logoUrl}" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Membresía Aprobada</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.4">Bienvenido al club, ${a.name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Tu solicitud ha sido aprobada. A continuación encontrarás tus credenciales para acceder al portal de miembros. Te recomendamos cambiar tu contraseña en el primer inicio de sesión.</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e;margin-bottom:28px"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Usuario</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0 0 22px;color:#fff">${username}</p><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Contraseña temporal</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0;color:#fff">${password}</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Portal →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
+      html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="${logoUrl}" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Membresía Aprobada</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.4">Bienvenido al club, ${a.name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Tu solicitud ha sido aprobada. A continuación encontrarás tus credenciales para acceder al portal de miembros. Te recomendamos cambiar tu contraseña en el primer inicio de sesión.</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e;margin-bottom:28px"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Usuario</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0 0 22px;color:#fff">${username}</p><p style="font-size:13px;color:#aaa;line-height:1.8;margin:0">Recibirás un correo separado para establecer tu contraseña de acceso al portal.</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Portal →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
     })
   }).catch(()=>{});
   toast('Solicitud aprobada — credenciales enviadas a '+a.email);
@@ -1217,14 +1217,14 @@ function openCreds(memberId){
   const mu=_MU.find(u=>u.member_id===memberId);
   document.getElementById('credsTitle').textContent=(mu?'Editar':'Crear')+' Acceso — '+(m?.name||'');
   document.getElementById('crUser').value=mu?.username||'';
-  document.getElementById('crPass').value=mu?.password||'';
+  document.getElementById('crPass').value='';
   closeModal('modalMember');openModal('modalCreds');
 }
 function autoGenCreds(){
   const m=_M.find(x=>x.id===credsMemberId);if(!m)return;
   // Usuario = email del miembro (Supabase Auth usa email)
   document.getElementById('crUser').value=m.email||'';
-  document.getElementById('crPass').value='Alpha'+Math.floor(1000+Math.random()*9000)+'!';
+  const _arr=new Uint8Array(12);crypto.getRandomValues(_arr);document.getElementById('crPass').value='Ad'+Array.from(_arr).map(b=>'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'[b%60]).join('');
 }
 async function saveCreds(){
   const username=document.getElementById('crUser').value.trim().toLowerCase();
@@ -1275,7 +1275,7 @@ async function saveCreds(){
       body:JSON.stringify({
         to:m.email,
         subject:'ALPHA DRIVERS — Tu acceso al portal ha sido actualizado',
-        html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="https://alphadrivers.mx/imagenes/logo-ad.png" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Acceso al Portal</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px">Hola, ${m.name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Tu acceso al portal de miembros ha sido actualizado. Ingresa con las siguientes credenciales:</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Usuario</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0 0 22px;color:#fff">${username}</p><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Contraseña temporal</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0;color:#fff">${password}</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Portal →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
+        html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="https://alphadrivers.mx/imagenes/logo-ad.png" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Acceso al Portal</p><h1 style="font-size:22px;font-weight:700;margin:0 0 20px">Hola, ${m.name.split(' ')[0]}.</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 28px">Tu acceso al portal de miembros ha sido actualizado. Ingresa con las siguientes credenciales:</p></td></tr><tr><td style="padding:28px 32px;background:#111;border:1px solid #1e1e1e"><p style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#444;margin:0 0 6px">Usuario</p><p style="font-size:18px;font-weight:600;font-family:monospace;margin:0 0 22px;color:#fff">${username}</p><p style="font-size:13px;color:#aaa;line-height:1.8;margin:0">Recibirás un correo separado para establecer tu contraseña de acceso al portal.</p></td></tr><tr><td style="padding:28px 0;text-align:center"><a href="https://alphadrivers.mx/login" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Acceder al Portal →</a></td></tr><tr><td style="padding:24px 0 0;border-top:1px solid #1a1a1a;text-align:center"><p style="font-size:10px;color:#333;line-height:1.8;margin:0">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
       })
     }).catch(()=>{}); // fail silently — don't block UX
   }
@@ -1427,7 +1427,7 @@ async function saveStaff(){
   const dup=_STAFF.find(u=>u.username===username&&u.id!==editStaffId);
   if(dup){alert('Ese usuario ya existe');return;}
   const data={name,username,role,active:true};
-  if(password) data.password=password;
+  // No guardar contraseña en DB — solo en Supabase Auth
   if(editStaffId){
     const {error}=await SB.from('admin_users').update(data).eq('id',editStaffId);
     if(error){alert('Error: '+error.message);return;}

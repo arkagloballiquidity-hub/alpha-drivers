@@ -1262,12 +1262,19 @@ async function changePassword(){
   const errEl=document.getElementById('secErr');
   errEl.style.display='none';
   if(!old){showSecErr('Ingresa tu contraseña actual');return;}
-  if(_memberUser&&_memberUser.password&&old!==_memberUser.password){showSecErr('La contraseña actual no es correcta');return;}
-  if(nw.length<6){showSecErr('La nueva contraseña debe tener al menos 6 caracteres');return;}
+  if(nw.length<8){showSecErr('La nueva contraseña debe tener al menos 8 caracteres');return;}
   if(nw!==cf){showSecErr('Las contraseñas no coinciden');return;}
-  const {error}=await SB.from('member_users').update({password:nw,must_change_password:false}).eq('member_id',_MEMBER_ID);
+  // Verificar contraseña actual contra Supabase Auth (nunca contra DB)
+  const {data:sess}=await SB.auth.getSession();
+  const userEmail=sess?.session?.user?.email;
+  const {error:signErr}=await SB.auth.signInWithPassword({email:userEmail,password:old});
+  if(signErr){showSecErr('La contraseña actual no es correcta');return;}
+  // Actualizar contraseña en Supabase Auth
+  const {error}=await SB.auth.updateUser({password:nw});
   if(error){showSecErr('Error al actualizar: '+error.message);return;}
-  if(_memberUser)_memberUser.password=nw;
+  // Solo actualizar flag, nunca guardar contraseña en DB
+  await SB.from('member_users').update({must_change_password:false}).eq('member_id',_MEMBER_ID);
+  if(_memberUser)_memberUser.must_change_password=false;
   ['secOld','secNew','secConf'].forEach(id=>document.getElementById(id).value='');
   toast('Contraseña actualizada correctamente');
 }
@@ -1278,11 +1285,13 @@ async function saveForcedPassword(){
   const cf=document.getElementById('fpConf').value.trim();
   const errEl=document.getElementById('fpErr');
   errEl.style.display='none';
-  if(nw.length<6){errEl.textContent='Mínimo 6 caracteres';errEl.style.display='block';return;}
+  if(nw.length<8){errEl.textContent='Mínimo 8 caracteres';errEl.style.display='block';return;}
   if(nw!==cf){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
-  const {error}=await SB.from('member_users').update({password:nw,must_change_password:false}).eq('member_id',_MEMBER_ID);
+  // Actualizar contraseña en Supabase Auth (nunca guardar en DB)
+  const {error}=await SB.auth.updateUser({password:nw});
   if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
-  if(_memberUser){_memberUser.password=nw;_memberUser.must_change_password=false;}
+  await SB.from('member_users').update({must_change_password:false}).eq('member_id',_MEMBER_ID);
+  if(_memberUser){_memberUser.must_change_password=false;}
   document.getElementById('modalForcePass').classList.remove('open');
   toast('Contraseña actualizada — bienvenido a Alpha Drivers');
 }

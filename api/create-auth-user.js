@@ -27,14 +27,15 @@ export default async function handler(req, res) {
   const { data: { user: caller }, error: authErr } = await supabaseAdmin.auth.getUser(token);
   if (authErr || !caller) return res.status(401).json({ error: 'Sesión inválida' });
 
-  const callerRole = caller.user_metadata?.role;
+  // app_metadata es solo escribible por service role; user_metadata puede ser modificado por el usuario
+  const callerRole = caller.app_metadata?.role || caller.user_metadata?.role;
   if (!['admin', 'concierge', 'staff'].includes(callerRole)) {
     return res.status(403).json({ error: 'Acceso denegado' });
   }
 
   const { email, password, member_id, role } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'email y password son requeridos' });
-  if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 
   // Construir email de auth: si ya tiene @, usarlo directo; si no, agregar @alphadrivers.mx
   const authEmail = email.includes('@') ? email.toLowerCase().trim() : `${email.toLowerCase().trim()}@alphadrivers.mx`;
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
   if (error) {
     // Si el usuario ya existe, retornar su ID para que se pueda actualizar
     if (error.message?.includes('already registered')) {
-      const { data: existing } = await supabaseAdmin.auth.admin.listUsers();
+      const { data: existing } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
       const found = existing?.users?.find(u => u.email === authEmail);
       if (found) return res.status(200).json({ user_id: found.id, existed: true });
     }
