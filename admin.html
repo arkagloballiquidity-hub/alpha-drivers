@@ -580,7 +580,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
     <div class="modal-body">
       <div class="mfield"><label>Nombre Completo</label><input id="stName" placeholder="Nombre completo"/></div>
       <div class="mfield"><label>Usuario (para iniciar sesión)</label><input id="stUsername" placeholder="usuario.apellido" autocomplete="off"/></div>
-      <div class="mfield"><label>Contraseña</label><input id="stPassword" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/></div>
+      <div class="mfield"><label id="stPasswordLabel">Contraseña</label><input id="stPassword" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/></div>
       <div class="mfield"><label>Rol</label>
         <select id="stRole">
           <option value="admin">Admin — Acceso completo</option>
@@ -608,7 +608,8 @@ const SB=supabase.createClient(
 (async function(){
   const { data:{ session } } = await SB.auth.getSession();
   if(!session?.user){ location.replace('/login'); return; }
-  const role = session.user.user_metadata?.role || '';
+  // app_metadata es más seguro (solo service role puede escribirlo); user_metadata como fallback
+  const role = session.user.app_metadata?.role || session.user.user_metadata?.role || '';
   if(!['admin','concierge','staff'].includes(role)){ location.replace('/login'); return; }
   // Refrescar localStorage con datos del JWT real
   const display = session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'admin';
@@ -810,6 +811,8 @@ function renderView(name){
         <td><span class="status ${u.role==='admin'?'st-active':'st-review'}" style="text-transform:uppercase">${_esc(u.role)}</span></td>
         <td><span class="status ${u.active!==false?'st-active':'st-rejected'}">${u.active!==false?'Activo':'Inactivo'}</span></td>
         <td style="white-space:nowrap">
+          <button class="tbl-action" onclick="openEditStaff('${_esc(u.id)}')">Editar</button>
+          <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
           <button class="tbl-action" onclick="toggleStaffActive('${_esc(u.id)}')">${u.active!==false?'Desactivar':'Activar'}</button>
           <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
           <button class="tbl-action" style="color:var(--red)" onclick="deleteStaff('${_esc(u.id)}')">Eliminar</button>
@@ -1414,34 +1417,83 @@ let editStaffId=null;
 function openAddStaff(){
   editStaffId=null;
   document.getElementById('staffModalTitle').textContent='Agregar Staff';
+  document.getElementById('stPasswordLabel').textContent='Contraseña';
+  document.getElementById('stPassword').placeholder='Mínimo 8 caracteres';
+  document.getElementById('stUsername').disabled=false;
   ['stName','stUsername','stPassword'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('stRole').value='concierge';
+  openModal('modalStaff');
+}
+function openEditStaff(id){
+  const u=_STAFF.find(x=>x.id===id);if(!u)return;
+  editStaffId=id;
+  document.getElementById('staffModalTitle').textContent='Editar Staff';
+  document.getElementById('stPasswordLabel').textContent='Nueva Contraseña (dejar vacío para no cambiar)';
+  document.getElementById('stPassword').placeholder='Opcional — mínimo 8 caracteres';
+  document.getElementById('stName').value=u.name||'';
+  document.getElementById('stUsername').value=u.username||'';
+  document.getElementById('stUsername').disabled=true; // No cambiar username — es el email de Auth
+  document.getElementById('stPassword').value='';
+  document.getElementById('stRole').value=u.role||'concierge';
   openModal('modalStaff');
 }
 async function saveStaff(){
   const name=document.getElementById('stName').value.trim();
   const username=document.getElementById('stUsername').value.trim().toLowerCase().replace(/\s/g,'');
-  const password=document.getElementById('stPassword').value.trim();
+  const password=document.getElementById('stPassword').value;
   const role=document.getElementById('stRole').value;
   if(!name||!username){alert('Nombre y usuario son requeridos');return;}
-  if(password.length<6){alert('La contraseña debe tener al menos 6 caracteres');return;}
+
   const dup=_STAFF.find(u=>u.username===username&&u.id!==editStaffId);
   if(dup){alert('Ese usuario ya existe');return;}
-  const data={name,username,role,active:true};
-  // No guardar contraseña en DB — solo en Supabase Auth
+
+  const sess=await SB.auth.getSession();
+  const token=sess.data?.session?.access_token;
+
   if(editStaffId){
+    // Edición: actualizar datos en DB
+    if(password&&password.length<8){alert('La contraseña debe tener al menos 8 caracteres');return;}
+    const data={name,role};
     const {error}=await SB.from('admin_users').update(data).eq('id',editStaffId);
     if(error){alert('Error: '+error.message);return;}
+    // Actualizar contraseña en Auth si se proporcionó
+    if(password){
+      const r=await fetch('/api/create-auth-user',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({action:'update-password',email:username,password})
+      });
+      if(!r.ok){const e=await r.json();alert('Datos guardados, pero error al cambiar contraseña: '+(e.error||r.status));return;}
+    }
     const idx=_STAFF.findIndex(u=>u.id===editStaffId);
     if(idx>=0)_STAFF[idx]={..._STAFF[idx],...data};
     toast('Usuario actualizado');
   } else {
-    const {data:d,error}=await SB.from('admin_users').insert(data).select().single();
-    if(error){alert('Error: '+error.message);return;}
-    _STAFF.push(d);
-    toast('Usuario de staff creado');
+    // Creación: primero crear cuenta en Supabase Auth
+    if(password.length<8){alert('La contraseña debe tener al menos 8 caracteres');return;}
+    const r=await fetch('/api/create-auth-user',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({email:username,password,role})
+    });
+    if(!r.ok){const e=await r.json();alert('Error creando cuenta: '+(e.error||r.status));return;}
+    const {user_id}=await r.json();
+    // Insertar en admin_users con auth_user_id
+    const newId='su'+Date.now();
+    const {data:d,error}=await SB.from('admin_users').insert({id:newId,name,username,role,active:true,auth_user_id:user_id}).select().single();
+    if(error){
+      // Si no existe la columna auth_user_id, insertar sin ella
+      const {data:d2,error:e2}=await SB.from('admin_users').insert({id:newId,name,username,role,active:true}).select().single();
+      if(e2){alert('Cuenta Auth creada pero error en DB: '+e2.message);return;}
+      _STAFF.push(d2);
+    } else {
+      _STAFF.push(d);
+    }
+    toast('Staff creado — ya puede iniciar sesión en el portal');
   }
-  editStaffId=null;closeModal('modalStaff');renderView('staff');
+  editStaffId=null;
+  document.getElementById('stUsername').disabled=false;
+  closeModal('modalStaff');renderView('staff');
 }
 async function toggleStaffActive(id){
   const u=_STAFF.find(x=>x.id===id);if(!u)return;

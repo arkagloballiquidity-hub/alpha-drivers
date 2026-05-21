@@ -33,7 +33,34 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Acceso denegado' });
   }
 
-  const { email, password, member_id, role } = req.body;
+  const { action, email, password, member_id, role } = req.body;
+
+  // ── ACCIÓN: actualizar contraseña de usuario existente ────────
+  if (action === 'update-password') {
+    if (callerRole !== 'admin') return res.status(403).json({ error: 'Solo admins pueden cambiar contraseñas de staff' });
+    if (!email || !password) return res.status(400).json({ error: 'email y password son requeridos' });
+    if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+
+    const authEmail = email.includes('@') ? email.toLowerCase().trim() : `${email.toLowerCase().trim()}@alphadrivers.mx`;
+
+    // Buscar usuario por email
+    let targetId = null;
+    let page = 1;
+    while (true) {
+      const { data: batch } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+      const found = batch?.users?.find(u => u.email === authEmail);
+      if (found) { targetId = found.id; break; }
+      if (!batch?.users?.length || batch.users.length < 1000) break;
+      page++;
+    }
+    if (!targetId) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const { error: upErr } = await supabaseAdmin.auth.admin.updateUserById(targetId, { password });
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    return res.status(200).json({ updated: true });
+  }
+
+  // ── ACCIÓN: crear nuevo usuario ───────────────────────────────
   if (!email || !password) return res.status(400).json({ error: 'email y password son requeridos' });
   if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 
