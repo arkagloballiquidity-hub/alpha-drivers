@@ -1087,6 +1087,7 @@ function renderProfile(){
 function onAvatarSelect(input){
   const f=input.files[0];if(!f)return;
   if(f.size>2*1024*1024){toast('La imagen debe ser menor a 2 MB');input.value='';return;}
+  if(!['image/jpeg','image/png','image/webp'].includes(f.type)){toast('Solo se permiten imágenes JPG, PNG o WebP');input.value='';return;}
   const reader=new FileReader();
   reader.onload=e=>{
     const av=document.getElementById('avatarPreview');
@@ -1788,9 +1789,22 @@ function openEventoModal(i){
 
 // ── CONCIERGE ─────────────────────────────────────────────────
 function selTag(el){document.querySelectorAll('.req-tag').forEach(t=>t.classList.remove('active-tag'));el.classList.add('active-tag');}
-function sendConcierge(){
+async function sendConcierge(){
   const msg=document.getElementById('conciergeMsg').value.trim();
   if(!msg){toast('Por favor escribe tu mensaje');return;}
+  const activeTag=document.querySelector('.req-tag.active-tag');
+  const categoria=activeTag?activeTag.textContent.trim():'General';
+  const m=getMember();
+  // Guardar solicitud en DB para que el concierge la gestione desde el panel
+  await SB.from('concierge_requests').insert({
+    id:'cr'+Date.now(),
+    member_id:_MEMBER_ID,
+    member_name:m.name||m.nombre||'Miembro Alpha',
+    categoria,
+    mensaje:msg,
+    status:'Pendiente',
+    created_at:new Date().toISOString(),
+  });
   document.getElementById('conciergeMsg').value='';
   toast('Solicitud enviada — Tu concierge te contactará pronto');
 }
