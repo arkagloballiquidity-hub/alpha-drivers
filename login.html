@@ -84,7 +84,8 @@ body{background:#080808;color:#fff;font-family:var(--b);min-height:100vh;display
 // ── SUPABASE AUTH ─────────────────────────────────────────────
 const SB = supabase.createClient(
   'https://fggchwkbvelqiofkojqn.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8',
+  { auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true } }
 );
 
 // Si ya hay sesión activa, redirigir directo
