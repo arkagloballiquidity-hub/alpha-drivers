@@ -636,8 +636,9 @@ const SB=supabase.createClient(
   if(role !== 'admin'){
     document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
   }
-  // Forzar cambio de contraseña en primer inicio de sesión
-  if(session.user.user_metadata?.must_change_password){
+  // Forzar cambio de contraseña — leemos desde admin_users (no user_metadata, que es editable por el usuario)
+  const {data:auRow}=await SB.from('admin_users').select('must_change_password').eq('auth_user_id',session.user.id).maybeSingle();
+  if(auRow?.must_change_password){
     document.getElementById('modalForcePassAdmin').classList.add('open');
   }
 })();
@@ -663,9 +664,14 @@ async function saveStaffForcedPassword(){
   errEl.style.display='none';
   if(nw.length<8){errEl.textContent='Mínimo 8 caracteres';errEl.style.display='block';return;}
   if(nw!==cf){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
-  // Actualizar contraseña y quitar flag de cambio obligatorio
-  const {error}=await SB.auth.updateUser({password:nw,data:{must_change_password:false}});
+  // Actualizar contraseña en Supabase Auth
+  const {error}=await SB.auth.updateUser({password:nw});
   if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+  // Quitar flag de cambio obligatorio desde admin_users (no user_metadata, que es user-writable)
+  const {data:{session:curSess}}=await SB.auth.getSession();
+  if(curSess?.user?.id){
+    await SB.from('admin_users').update({must_change_password:false}).eq('auth_user_id',curSess.user.id);
+  }
   document.getElementById('modalForcePassAdmin').classList.remove('open');
   toast('Contraseña actualizada — bienvenido al panel');
 }
@@ -1550,7 +1556,7 @@ async function saveStaff(){
     if(!r.ok){const e=await r.json();alert('Error creando cuenta: '+(e.error||r.status));return;}
     const {user_id}=await r.json();
     // Insertar en admin_users — usar auth_user_id como id (ya es UUID)
-    const {data:d,error}=await SB.from('admin_users').insert({id:user_id,name,username,role,active:true,auth_user_id:user_id}).select().single();
+    const {data:d,error}=await SB.from('admin_users').insert({id:user_id,name,username,role,active:true,auth_user_id:user_id,must_change_password:true}).select().single();
     if(error){
       // Si no existe la columna auth_user_id, insertar sin ella
       const {data:d2,error:e2}=await SB.from('admin_users').insert({id:user_id,name,username,role,active:true}).select().single();
