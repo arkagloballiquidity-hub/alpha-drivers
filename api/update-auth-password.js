@@ -1,6 +1,6 @@
 // api/update-auth-password.js
 // Vercel serverless function — actualiza contraseña de un usuario existente en Supabase Auth
-// Solo accesible para admins con sesión válida de Supabase
+// Solo accesible para admins autenticados (verifica app_metadata.role, no user_metadata)
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -26,23 +26,30 @@ export default async function handler(req, res) {
   const { data: { user: caller }, error: authErr } = await supabaseAdmin.auth.getUser(token);
   if (authErr || !caller) return res.status(401).json({ error: 'Sesión inválida' });
 
-  const callerRole = caller.user_metadata?.role;
-  if (!['admin', 'concierge', 'staff'].includes(callerRole)) {
-    return res.status(403).json({ error: 'Acceso denegado' });
+  // app_metadata solo escribible por service role — no user_metadata (usuario puede escribirla)
+  const callerRole = caller.app_metadata?.role;
+  if (callerRole !== 'admin') {
+    return res.status(403).json({ error: 'Solo admins pueden actualizar contraseñas' });
   }
 
   const { user_id, password, email } = req.body;
   if (!password) return res.status(400).json({ error: 'password es requerido' });
-  if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 
   // Permitir buscar por user_id o por email
   let targetUserId = user_id;
   if (!targetUserId && email) {
     const authEmail = email.includes('@') ? email.toLowerCase() : `${email.toLowerCase()}@alphadrivers.mx`;
-    const { data: list } = await supabaseAdmin.auth.admin.listUsers();
-    const found = list?.users?.find(u => u.email === authEmail);
-    if (!found) return res.status(404).json({ error: 'Usuario no encontrado' });
-    targetUserId = found.id;
+    // Paginar para manejar más de 1000 usuarios
+    let page = 1;
+    while (true) {
+      const { data: batch } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+      const found = batch?.users?.find(u => u.email === authEmail);
+      if (found) { targetUserId = found.id; break; }
+      if (!batch?.users?.length || batch.users.length < 1000) break;
+      page++;
+    }
+    if (!targetUserId) return res.status(404).json({ error: 'Usuario no encontrado' });
   }
 
   if (!targetUserId) return res.status(400).json({ error: 'user_id o email son requeridos' });

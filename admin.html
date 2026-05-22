@@ -1707,7 +1707,6 @@ function renderContract(){
   if(urlEl)urlEl.value=_CFG_GENERAL.contract_url||'';
   if(fnEl)fnEl.value=_CFG_GENERAL.contract_filename||'Contrato_Alpha_Drivers.pdf';
   if(previewEl&&_CFG_GENERAL.contract_url){
-    const safeUrl=_CFG_GENERAL.contract_url.replace(/^(?!https?:\/\/)/i,'');
     if(/^https?:\/\//i.test(_CFG_GENERAL.contract_url)){
       previewEl.innerHTML=`<a href="${_esc(_CFG_GENERAL.contract_url)}" target="_blank" rel="noopener noreferrer" style="color:rgba(255,255,255,.5);text-decoration:underline;font-size:11px">Ver contrato actual →</a>`;
     } else {
