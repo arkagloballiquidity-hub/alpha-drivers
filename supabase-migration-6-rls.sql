@@ -44,16 +44,19 @@ CREATE TABLE IF NOT EXISTS concierge_requests (
 );
 
 -- ══════════════════════════════════════════════════════════════
--- 2. COLUMNA must_change_password EN admin_users
---    (mueve el flag de user_metadata -escribible por el usuario-
---     a la tabla que solo el service role puede modificar)
+-- 2. COLUMNAS EN admin_users
 -- ══════════════════════════════════════════════════════════════
 
+-- auth_user_id vincula admin_users con auth.users (UUID de Supabase Auth)
+ALTER TABLE admin_users
+  ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- must_change_password: flag seguro en DB (no en user_metadata que el usuario puede editar)
 ALTER TABLE admin_users
   ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT false;
 
--- Migrar el flag desde user_metadata de auth.users para cuentas existentes
--- (solo si ya tienes staff creado; si no, esta query no hace nada)
+-- Migrar el flag desde user_metadata para cuentas ya existentes
+-- (si auth_user_id ya estaba seteado en alguna fila)
 UPDATE admin_users au
 SET    must_change_password = true
 FROM   auth.users u
