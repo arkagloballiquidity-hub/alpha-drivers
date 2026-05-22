@@ -1215,6 +1215,8 @@ async function uploadDocument(){
   const btn=document.getElementById('docUploadBtn');
   if(!file){toast('Selecciona un archivo primero');return;}
   if(file.size>5*1024*1024){toast('El archivo supera 5 MB — elige uno más pequeño');return;}
+  const ALLOWED_TYPES=['application/pdf','image/jpeg','image/png','image/webp'];
+  if(!ALLOWED_TYPES.includes(file.type)){toast('Tipo de archivo no permitido — usa PDF, JPG o PNG');return;}
   btn.disabled=true;btn.textContent='Subiendo...';
   const m=getMember();
   try{
@@ -1244,6 +1246,8 @@ async function uploadPaymentProof(){
   const btn=document.getElementById('pagoUploadBtn');
   if(!file){toast('Selecciona un archivo primero');return;}
   if(file.size>5*1024*1024){toast('El archivo supera 5 MB — elige uno más pequeño');return;}
+  const ALLOWED_TYPES=['application/pdf','image/jpeg','image/png','image/webp'];
+  if(!ALLOWED_TYPES.includes(file.type)){toast('Tipo de archivo no permitido — usa PDF, JPG o PNG');return;}
   btn.disabled=true;btn.textContent='Enviando...';
   const m=getMember();
   try{
@@ -1353,19 +1357,17 @@ async function generateReferral(){
   document.getElementById('refNota').value='';
   renderReferrals();
   toast('Código de invitación generado');
-  // Send invitation email to the candidate
-  const memberName=m.name||m.nombre||'Un miembro Alpha Drivers';
-  const notaHtml=nota?`<tr><td style="padding:20px 24px;background:#111;border-left:3px solid #444;margin:20px 0"><p style="font-size:13px;color:#ccc;font-style:italic;line-height:1.7;margin:0">"${nota}"</p></td></tr>`:'';
-  const logoUrl='https://alphadrivers.mx/imagenes/logo-ad.png';
-  fetch('/api/send-email',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      to:email,
-      subject:`${memberName} te ha invitado a ALPHA DRIVERS`,
-      html:`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;color:#fff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px"><table width="100%" style="max-width:520px"><tr><td style="padding-bottom:36px;border-bottom:1px solid #1e1e1e;text-align:center"><img src="${logoUrl}" alt="ALPHA DRIVERS" style="height:44px;display:inline-block"/></td></tr><tr><td style="padding:40px 0 24px"><p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#555;margin:0 0 20px">Invitación Exclusiva</p><h1 style="font-size:22px;font-weight:700;margin:0 0 16px;line-height:1.3">Hola, ${name}</h1><p style="font-size:14px;color:#aaa;line-height:1.9;margin:0 0 8px"><strong style="color:#fff">${memberName}</strong> te ha seleccionado personalmente para unirte a <strong style="color:#fff">ALPHA DRIVERS</strong>, el club privado de membresía para pilotos y entusiastas de la conducción de alto desempeño.</p></td></tr>${notaHtml}<tr><td style="padding:32px 0;text-align:center;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a"><p style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#555;margin:0 0 16px">Tu código de invitación</p><div style="display:inline-block;background:#fff;color:#000;font-family:monospace;font-size:26px;font-weight:700;letter-spacing:.25em;padding:16px 36px">${code}</div><p style="font-size:11px;color:#555;margin:20px 0 0;line-height:1.7">Ingresa a <strong style="color:#aaa">alphadrivers.mx</strong> y usa este código<br>al completar tu solicitud de membresía.</p></td></tr><tr><td style="padding:36px 0 0;text-align:center"><a href="https://alphadrivers.mx" style="display:inline-block;background:#fff;color:#000;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-decoration:none;padding:14px 36px">Solicitar Membresía</a><p style="font-size:10px;color:#333;margin:32px 0 0;line-height:1.8">ALPHA DRIVERS · Club Privado de Membresía Deportiva<br>alphadrivers.mx · Por favor no respondas a este correo.</p></td></tr></table></td></tr></table></body></html>`
-    })
-  }).catch(()=>{});
+  // Enviar email de invitación via endpoint dedicado con template server-side
+  // El servidor lee los datos directamente del DB — el cliente solo envía el ID del código
+  if(data?.id){
+    const {data:{session:invSess}}=await SB.auth.getSession();
+    const invToken=invSess?.access_token||'';
+    fetch('/api/send-invite',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+invToken},
+      body:JSON.stringify({invite_code_id:data.id})
+    }).catch(()=>{});
+  }
 }
 function copyRefCode(){
   const code=document.getElementById('refCode').textContent;
