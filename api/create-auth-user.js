@@ -9,8 +9,10 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const ALLOWED_ORIGINS = ['https://alphadrivers.mx'];
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://alphadrivers.mx');
+  const origin = req.headers.origin || '';
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : 'null');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -56,7 +58,7 @@ export default async function handler(req, res) {
     if (!targetId) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     const { error: upErr } = await supabaseAdmin.auth.admin.updateUserById(targetId, { password });
-    if (upErr) return res.status(400).json({ error: upErr.message });
+    if (upErr) { console.error('updateUserById error:', upErr.message); return res.status(400).json({ error: 'No se pudo actualizar la contraseña' }); }
     return res.status(200).json({ updated: true });
   }
 
@@ -91,7 +93,8 @@ export default async function handler(req, res) {
       const found = existing?.users?.find(u => u.email === authEmail);
       if (found) return res.status(200).json({ user_id: found.id, existed: true });
     }
-    return res.status(400).json({ error: error.message });
+    console.error('createUser error:', error.message);
+    return res.status(400).json({ error: 'No se pudo crear el usuario' });
   }
 
   // Setear app_metadata (solo escribible por service role)

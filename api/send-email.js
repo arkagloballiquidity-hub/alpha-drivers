@@ -8,8 +8,10 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const ALLOWED_ORIGINS = ['https://alphadrivers.mx'];
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://alphadrivers.mx');
+  const origin = req.headers.origin || '';
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : 'null');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -33,6 +35,9 @@ export default async function handler(req, res) {
   if (!to || !subject || !html) {
     return res.status(400).json({ error: 'Missing required fields: to, subject, html' });
   }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(to))) {
+    return res.status(400).json({ error: 'Dirección de correo inválida' });
+  }
 
   const { data, error } = await resend.emails.send({
     from: 'ALPHA DRIVERS <noreply@alphadrivers.mx>',
@@ -41,6 +46,6 @@ export default async function handler(req, res) {
     html,
   });
 
-  if (error) return res.status(400).json({ error });
+  if (error) { console.error('Resend error:', error); return res.status(400).json({ error: 'Error al enviar correo' }); }
   return res.status(200).json({ data });
 }

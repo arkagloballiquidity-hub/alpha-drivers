@@ -624,8 +624,7 @@ const SB=supabase.createClient(
 (async function(){
   const { data:{ session } } = await SB.auth.getSession();
   if(!session?.user){ location.replace('/login'); return; }
-  // app_metadata es más seguro (solo service role puede escribirlo); user_metadata como fallback
-  const role = session.user.app_metadata?.role || session.user.user_metadata?.role || '';
+  const role = session.user.app_metadata?.role || '';
   if(!['admin','concierge','staff'].includes(role)){ location.replace('/login'); return; }
   // Refrescar localStorage con datos del JWT real
   const display = session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'admin';
@@ -796,7 +795,7 @@ function renderView(name){
     document.getElementById('dashBenReqsBody').innerHTML=pending.slice(0,5).map(r=>`
       <tr><td>${_esc(r.member_name)}</td><td>${_esc(r.tipo)}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${_esc(r.detalle||'')}</td><td>${r.monto?fmtMXN(r.monto):'-'}</td>
       <td><span class="status st-pending">Pendiente</span></td>
-      <td><button class="tbl-action" onclick="openBenReq('${_esc(r.id)}')">Revisar →</button></td></tr>`).join('')
+      <td><button class="tbl-action" data-id="${_esc(r.id)}" onclick="openBenReq(this.dataset.id)">Revisar →</button></td></tr>`).join('')
       ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:24px">Sin solicitudes pendientes</td></tr>';
   }
   if(name==='members'){
@@ -804,15 +803,15 @@ function renderView(name){
       const mu=_MU.find(u=>u.member_id===m.id);
       const portalBadge=mu
         ?(mu.active!==false
-            ?`<span class="status st-active" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${_esc(m.id)}')" title="${_esc(mu.username)}">Activo</span>`
-            :`<span class="status st-rejected" style="cursor:pointer" onclick="event.stopPropagation();openCreds('${_esc(m.id)}')">Inactivo</span>`)
-        :`<button class="tbl-action" onclick="event.stopPropagation();openCreds('${_esc(m.id)}')">+ Crear</button>`;
+            ?`<span class="status st-active" style="cursor:pointer" data-id="${_esc(m.id)}" onclick="event.stopPropagation();openCreds(this.dataset.id)" title="${_esc(mu.username)}">Activo</span>`
+            :`<span class="status st-rejected" style="cursor:pointer" data-id="${_esc(m.id)}" onclick="event.stopPropagation();openCreds(this.dataset.id)">Inactivo</span>`)
+        :`<button class="tbl-action" data-id="${_esc(m.id)}" onclick="event.stopPropagation();openCreds(this.dataset.id)">+ Crear</button>`;
       const inactive=m.status==='Inactivo';
-      return `<tr class="clickable" onclick="openMember('${_esc(m.id)}')" style="${inactive?'opacity:.4;':''}">
+      return `<tr class="clickable" data-id="${_esc(m.id)}" onclick="openMember(this.dataset.id)" style="${inactive?'opacity:.4;':''}">
         <td>${_esc(m.numero||m.id)}</td><td>${_esc(m.name)}</td><td>${_esc(m.city)}</td><td>${_esc(m.vehicle)}</td><td>${_esc(m.date)}</td>
         <td><span class="status ${statusClass(m.status)}">${_esc(m.status)}</span></td>
         <td>${portalBadge}</td>
-        <td><button class="tbl-action" onclick="event.stopPropagation();openMember('${_esc(m.id)}')">Ver →</button></td>
+        <td><button class="tbl-action" data-id="${_esc(m.id)}" onclick="event.stopPropagation();openMember(this.dataset.id)">Ver →</button></td>
       </tr>`;
     }).join('')||'<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin miembros registrados</td></tr>';
   }
@@ -820,7 +819,7 @@ function renderView(name){
     document.getElementById('appsBody').innerHTML=_A.map(a=>`
       <tr><td>${_esc(a.name)}</td><td>${_esc(a.city)}</td><td>${_esc(a.vehicle)}</td><td>${_esc(a.date)}</td>
       <td><span class="status ${statusClass(a.status)}">${_esc(a.status)}</span></td>
-      <td><button class="tbl-action" onclick="openApp('${_esc(a.id)}')">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`).join('')
+      <td><button class="tbl-action" data-id="${_esc(a.id)}" onclick="openApp(this.dataset.id)">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`).join('')
       ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes</td></tr>';
   }
   if(name==='ben-reqs'){
@@ -828,7 +827,7 @@ function renderView(name){
       <tr><td>${_esc(r.member_name)}</td><td>${_esc(r.tipo)}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${_esc(r.detalle||'')}</td>
       <td>${r.monto?fmtMXN(r.monto):'-'}</td><td style="font-size:11px">${_esc(r.fecha)}</td>
       <td><span class="status ${statusClass(r.status)}">${_esc(r.status)}</span></td>
-      <td><button class="tbl-action" onclick="openBenReq('${_esc(r.id)}')">Ver →</button></td></tr>`).join('')
+      <td><button class="tbl-action" data-id="${_esc(r.id)}" onclick="openBenReq(this.dataset.id)">Ver →</button></td></tr>`).join('')
       :'<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes de beneficios</td></tr>';
   }
   if(name==='socios'){
@@ -839,9 +838,9 @@ function renderView(name){
         <td>${fmtMXN(s.limite)}</td>
         <td style="font-size:11px;color:rgba(255,255,255,.5)">${_esc(s.contacto)}</td>
         <td style="white-space:nowrap">
-          <button class="tbl-action" onclick="openEditSocio('${_esc(s.id)}')">Editar</button>
+          <button class="tbl-action" data-id="${_esc(s.id)}" onclick="openEditSocio(this.dataset.id)">Editar</button>
           <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
-          <button class="tbl-action" style="color:var(--red)" onclick="deleteSocio('${_esc(s.id)}')">Eliminar</button>
+          <button class="tbl-action" style="color:var(--red)" data-id="${_esc(s.id)}" onclick="deleteSocio(this.dataset.id)">Eliminar</button>
         </td>
       </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin socios</td></tr>';
   }
@@ -853,11 +852,11 @@ function renderView(name){
         <td><span class="status ${u.role==='admin'?'st-active':'st-review'}" style="text-transform:uppercase">${_esc(u.role)}</span></td>
         <td><span class="status ${u.active!==false?'st-active':'st-rejected'}">${u.active!==false?'Activo':'Inactivo'}</span></td>
         <td style="white-space:nowrap">
-          <button class="tbl-action" onclick="openEditStaff('${_esc(u.id)}')">Editar</button>
+          <button class="tbl-action" data-id="${_esc(u.id)}" onclick="openEditStaff(this.dataset.id)">Editar</button>
           <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
-          <button class="tbl-action" onclick="toggleStaffActive('${_esc(u.id)}')">${u.active!==false?'Desactivar':'Activar'}</button>
+          <button class="tbl-action" data-id="${_esc(u.id)}" onclick="toggleStaffActive(this.dataset.id)">${u.active!==false?'Desactivar':'Activar'}</button>
           <span style="color:rgba(255,255,255,.15);margin:0 6px">·</span>
-          <button class="tbl-action" style="color:var(--red)" onclick="deleteStaff('${_esc(u.id)}')">Eliminar</button>
+          <button class="tbl-action" style="color:var(--red)" data-id="${_esc(u.id)}" onclick="deleteStaff(this.dataset.id)">Eliminar</button>
         </td>
       </tr>`).join('')
       :'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin usuarios de staff registrados</td></tr>';
@@ -869,7 +868,7 @@ function renderView(name){
         <td style="font-size:11px;color:rgba(255,255,255,.6)">${_esc(p.filename||'Comprobante')}</td>
         <td style="font-size:11px">${fmtDate(p.uploaded_at)}</td>
         <td><span class="status ${statusClass(p.status)}">${_esc(p.status)}</span></td>
-        <td><button class="tbl-action" onclick="openPago('${_esc(p.id)}')">Ver →</button></td>
+        <td><button class="tbl-action" data-id="${_esc(p.id)}" onclick="openPago(this.dataset.id)">Ver →</button></td>
       </tr>`).join('')
       :'<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin comprobantes</td></tr>';
   }
@@ -881,7 +880,7 @@ function renderView(name){
         <td><span class="status st-review" style="font-size:8px;letter-spacing:.1em">${_esc(d.doc_type)}</span></td>
         <td style="font-size:11px">${fmtDate(d.uploaded_at)}</td>
         <td><span class="status ${statusClass(d.status)}">${_esc(d.status)}</span></td>
-        <td><button class="tbl-action" onclick="openDoc('${_esc(d.id)}')">Ver →</button></td>
+        <td><button class="tbl-action" data-id="${_esc(d.id)}" onclick="openDoc(this.dataset.id)">Ver →</button></td>
       </tr>`).join('')
       :'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin documentos</td></tr>';
   }
@@ -928,28 +927,28 @@ function openMember(id){
         <div class="md-item"><div class="md-lbl">Estado</div><div class="md-val"><span class="status ${statusClass(m.status)}">${_esc(m.status)}</span></div></div>
       </div>
       <div style="margin-top:12px;text-align:right">
-        <button class="btn-sm" onclick="saveMemberData('${_esc(id)}')">Guardar Datos</button>
+        <button class="btn-sm" data-id="${_esc(id)}" onclick="saveMemberData(this.dataset.id)">Guardar Datos</button>
       </div>
     </div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Número de Miembro</div>
       <div style="display:flex;gap:10px;align-items:center">
         <input type="text" id="mdNumero" value="${m.numero||m.id}" style="width:120px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:13px;font-weight:600;outline:none;letter-spacing:.1em"/>
-        <button class="btn-sm" onclick="saveNumero('${id}')">Guardar</button>
+        <button class="btn-sm" data-id="${_esc(id)}" onclick="saveNumero(this.dataset.id)">Guardar</button>
       </div>
     </div>
     <div style="margin-top:16px">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Cambiar Estado</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-sm" onclick="changeStatus('${id}','Activo')">Activo</button>
-        <button class="btn-sm-out" onclick="changeStatus('${id}','Pago Pendiente')">Pago Pendiente</button>
+        <button class="btn-sm" data-id="${_esc(id)}" onclick="changeStatus(this.dataset.id,'Activo')">Activo</button>
+        <button class="btn-sm-out" data-id="${_esc(id)}" onclick="changeStatus(this.dataset.id,'Pago Pendiente')">Pago Pendiente</button>
       </div>
     </div>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Inicio de Beneficios</div>
       <div style="display:flex;gap:10px;align-items:center">
         <input type="date" id="mdBenStart" value="${m.benefits_start||''}" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
-        <button class="btn-sm" onclick="saveBenStart('${id}')">Guardar</button>
+        <button class="btn-sm" data-id="${_esc(id)}" onclick="saveBenStart(this.dataset.id)">Guardar</button>
         ${m.benefits_start?`<span style="font-size:10px;color:var(--green)">Activo desde ${m.benefits_start}</span>`:`<span style="font-size:10px;color:var(--amber)">Sin fecha asignada</span>`}
       </div>
     </div>
@@ -963,7 +962,7 @@ function openMember(id){
         <input type="number" id="mdBenMax" placeholder="Límite anual (ej: 30000)" style="background:#0d0d0d;border:1px solid rgba(255,255,255,.15);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
         <input type="text" id="mdBenUnit" placeholder="Unidad (MXN, días, etc)" style="background:#0d0d0d;border:1px solid rgba(255,255,255,.15);color:#fff;padding:8px 10px;font-family:var(--b);font-size:11px;outline:none"/>
       </div>
-      <button class="btn-sm" onclick="addMemberBenefit('${id}')">+ Agregar Beneficio</button>
+      <button class="btn-sm" data-id="${_esc(id)}" onclick="addMemberBenefit(this.dataset.id)">+ Agregar Beneficio</button>
     </div>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px">Acceso al Portal</div>
@@ -976,11 +975,11 @@ function openMember(id){
             <span class="status ${mu.active!==false?'st-active':'st-rejected'}">${mu.active!==false?'Activo':'Inactivo'}</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-sm" onclick="openCreds('${id}')">Editar Credenciales</button>
-            <button class="btn-sm-out" onclick="toggleCredActive('${id}')">${mu.active!==false?'Desactivar Acceso':'Activar Acceso'}</button>
+            <button class="btn-sm" data-id="${_esc(id)}" onclick="openCreds(this.dataset.id)">Editar Credenciales</button>
+            <button class="btn-sm-out" data-id="${_esc(id)}" onclick="toggleCredActive(this.dataset.id)">${mu.active!==false?'Desactivar Acceso':'Activar Acceso'}</button>
           </div>`
         :`<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:12px">Este miembro no tiene acceso al portal aún.</div>
-           <button class="btn-sm" onclick="openCreds('${id}')">+ Crear Acceso</button>`
+           <button class="btn-sm" data-id="${_esc(id)}" onclick="openCreds(this.dataset.id)">+ Crear Acceso</button>`
       }
     </div>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)">
@@ -1411,8 +1410,8 @@ function renderRoadTours(){
         <div style="font-size:10px;color:rgba(255,255,255,.4)">${_esc(t.ruta)} · ${Number(t.inscritos||0)}/${Number(t.cupo)} inscritos</div>
       </div>
       <div style="display:flex;gap:10px;white-space:nowrap">
-        <button class="tbl-action" onclick="openEditRoadTour('${_esc(t.id)}')">Editar</button>
-        <button class="tbl-action" style="color:var(--red)" onclick="deleteRoadTour('${_esc(t.id)}')">×</button>
+        <button class="tbl-action" data-id="${_esc(t.id)}" onclick="openEditRoadTour(this.dataset.id)">Editar</button>
+        <button class="tbl-action" style="color:var(--red)" data-id="${_esc(t.id)}" onclick="deleteRoadTour(this.dataset.id)">×</button>
       </div>
     </div>`).join('');
 }

@@ -24,7 +24,9 @@ function escHtml(s) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://alphadrivers.mx');
+  const _ao = ['https://alphadrivers.mx'];
+  const _or = req.headers.origin || '';
+  res.setHeader('Access-Control-Allow-Origin', _ao.includes(_or) ? _or : 'null');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
