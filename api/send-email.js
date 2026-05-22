@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
   if (authErr || !user) return res.status(401).json({ error: 'Sesión inválida' });
 
-  const callerRole = user.app_metadata?.role || user.user_metadata?.role;
+  const callerRole = user.app_metadata?.role;
   if (!['admin', 'concierge', 'staff'].includes(callerRole)) {
     return res.status(403).json({ error: 'Acceso denegado' });
   }

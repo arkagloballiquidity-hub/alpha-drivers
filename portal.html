@@ -540,7 +540,7 @@ tr:last-child td{border-bottom:none}
     <!-- SEGURIDAD -->
     <div class="view" id="view-seguridad">
       <div class="section-title" style="margin-bottom:8px">Cambiar Contraseña</div>
-      <p style="font-size:12px;color:rgba(255,255,255,.38);letter-spacing:.04em;margin-bottom:28px">Actualiza tu contraseña de acceso al portal. Usa mínimo 6 caracteres.</p>
+      <p style="font-size:12px;color:rgba(255,255,255,.38);letter-spacing:.04em;margin-bottom:28px">Actualiza tu contraseña de acceso al portal. Usa mínimo 8 caracteres.</p>
       <div style="background:#111;border:1px solid rgba(255,255,255,.07);padding:32px;max-width:440px">
         <div class="mfield">
           <label>Contraseña Actual</label>
@@ -548,7 +548,7 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="mfield">
           <label>Nueva Contraseña</label>
-          <input type="password" id="secNew" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+          <input type="password" id="secNew" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
         </div>
         <div class="mfield">
           <label>Confirmar Nueva Contraseña</label>
@@ -840,7 +840,7 @@ tr:last-child td{border-bottom:none}
       <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Por seguridad, debes establecer una nueva contraseña antes de continuar. Esta contraseña fue generada automáticamente por el equipo Alpha Drivers.</p>
       <div class="mfield">
         <label>Nueva Contraseña</label>
-        <input type="password" id="fpNew" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+        <input type="password" id="fpNew" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
       </div>
       <div class="mfield">
         <label>Confirmar Contraseña</label>
@@ -946,6 +946,7 @@ function getRoadTours(){return _roadTours;}
 function getLimites(){return _limites;}
 function myReqs(){return _myReqs;}
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
+function _esc(s){const d=document.createElement('div');d.textContent=String(s??'');return d.innerHTML;}
 
 // Annual period — benefits reset every year from benefits_start, no accumulation
 function getBenefitYearRange(){
@@ -1115,17 +1116,20 @@ async function saveProfile(){
 function renderFotos(){
   const el=document.getElementById('fotosGallery');if(!el)return;
   if(!_myPhotos.length){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:48px;font-size:12px;grid-column:1/-1">Aún no hay fotos de eventos. Próximamente verás aquí las fotos de tus autos en cada evento.</div>';return;}
-  el.innerHTML=_myPhotos.map(p=>`
-    <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.07);overflow:hidden">
+  el.innerHTML=_myPhotos.map(p=>{
+    const safeSrc=/^data:image\//.test(p.file_data||'')?p.file_data:'';
+    const altTxt=_esc(p.title||p.event_name||'Foto');
+    return `<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.07);overflow:hidden">
       <div style="aspect-ratio:4/3;overflow:hidden;background:#111">
-        <img src="${p.file_data}" alt="${p.title||p.event_name||'Foto'}" style="width:100%;height:100%;object-fit:cover"/>
+        ${safeSrc?`<img src="${safeSrc}" alt="${altTxt}" style="width:100%;height:100%;object-fit:cover"/>`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.2);font-size:11px">Sin imagen</div>'}
       </div>
       <div style="padding:12px 14px">
-        ${p.event_name?`<div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px">${p.event_name}</div>`:''}
-        ${p.title?`<div style="font-size:12px;color:#fff;font-weight:500">${p.title}</div>`:''}
+        ${p.event_name?`<div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px">${_esc(p.event_name)}</div>`:''}
+        ${p.title?`<div style="font-size:12px;color:#fff;font-weight:500">${_esc(p.title)}</div>`:''}
         <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px">${fmtDate(p.uploaded_at)}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function renderDocs(){
   const el=document.getElementById('docsList');
@@ -1167,10 +1171,10 @@ function renderDocs(){
     <div class="doc-row">
       <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="1.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M7 7h6M7 11h4" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
       <div class="doc-info">
-        <div class="doc-name">${d.filename}</div>
-        <div class="doc-meta">${d.doc_type} · ${fmtDate(d.uploaded_at)}${d.admin_nota?` · <span style="color:var(--amber)">${d.admin_nota}</span>`:''}</div>
+        <div class="doc-name">${_esc(d.filename)}</div>
+        <div class="doc-meta">${_esc(d.doc_type)} · ${fmtDate(d.uploaded_at)}${d.admin_nota?` · <span style="color:var(--amber)">${_esc(d.admin_nota)}</span>`:''}</div>
       </div>
-      <span class="status ${d.status==='Revisado'?'st-active':d.status==='Rechazado'?'st-rejected':'st-pending'}">${d.status}</span>
+      <span class="status ${d.status==='Revisado'?'st-active':d.status==='Rechazado'?'st-rejected':'st-pending'}">${_esc(d.status)}</span>
     </div>`).join('');
 }
 function renderPayments(){
@@ -1180,10 +1184,10 @@ function renderPayments(){
     <div class="doc-row">
       <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="12" rx="1.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M2 9h16" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/></svg></div>
       <div class="doc-info">
-        <div class="doc-name">${p.filename||'Comprobante'}</div>
-        <div class="doc-meta">Subido el ${fmtDate(p.uploaded_at)}${p.admin_nota?` · <span style="color:var(--amber)">${p.admin_nota}</span>`:''}</div>
+        <div class="doc-name">${_esc(p.filename||'Comprobante')}</div>
+        <div class="doc-meta">Subido el ${fmtDate(p.uploaded_at)}${p.admin_nota?` · <span style="color:var(--amber)">${_esc(p.admin_nota)}</span>`:''}</div>
       </div>
-      <span class="status ${p.status==='Aprobado'?'st-active':p.status==='Rechazado'?'st-rejected':'st-pending'}">${p.status}</span>
+      <span class="status ${p.status==='Aprobado'?'st-active':p.status==='Rechazado'?'st-rejected':'st-pending'}">${_esc(p.status)}</span>
     </div>`).join('')+`</div>`;
 }
 
@@ -1314,8 +1318,8 @@ function renderReferrals(){
     <div class="doc-row">
       <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round"/></svg></div>
       <div class="doc-info">
-        <div class="doc-name">${r.referred_name||'Candidato'}</div>
-        <div class="doc-meta">${r.referred_email||''} · Código: <strong style="letter-spacing:.1em;color:rgba(255,255,255,.7)">${r.code}</strong> · ${fmtDate(r.created_at)}</div>
+        <div class="doc-name">${_esc(r.referred_name||'Candidato')}</div>
+        <div class="doc-meta">${_esc(r.referred_email||'')} · Código: <strong style="letter-spacing:.1em;color:rgba(255,255,255,.7)">${_esc(r.code)}</strong> · ${fmtDate(r.created_at)}</div>
       </div>
       <span class="status ${r.used?'st-active':'st-pending'}">${r.used?'Usado':'Disponible'}</span>
     </div>`).join('')+`</div>`;
@@ -1468,12 +1472,12 @@ function renderSolicitudes(){
   const reqs=myReqs();
   document.getElementById('solBody').innerHTML=reqs.length?reqs.map(r=>`
     <tr>
-      <td>${r.tipo}</td>
-      <td style="font-size:11px;color:rgba(255,255,255,.5)">${r.detalle||'—'}</td>
+      <td>${_esc(r.tipo)}</td>
+      <td style="font-size:11px;color:rgba(255,255,255,.5)">${_esc(r.detalle||'—')}</td>
       <td>${r.monto?fmtMXN(r.monto):'-'}</td>
-      <td style="font-size:11px">${r.fecha}</td>
-      <td><span class="status ${stClass(r.status)}">${r.status}</span></td>
-      <td style="font-size:11px;color:rgba(255,255,255,.4)">${r.admin_nota||'—'}</td>
+      <td style="font-size:11px">${_esc(r.fecha)}</td>
+      <td><span class="status ${stClass(r.status)}">${_esc(r.status)}</span></td>
+      <td style="font-size:11px;color:rgba(255,255,255,.4)">${_esc(r.admin_nota||'—')}</td>
     </tr>`).join('')
     :'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes realizadas — usa el botón "Solicitar" en cada beneficio</td></tr>';
 }
