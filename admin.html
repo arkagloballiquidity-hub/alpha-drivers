@@ -203,15 +203,15 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
   </div>
   <nav class="sb-nav">
     <div class="sb-section">General</div>
-    <button class="sb-link active" onclick="showView('dashboard',this)">
+    <button class="sb-link active" id="sbDashboard" onclick="showView('dashboard',this)">
       <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="12" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
       Dashboard
     </button>
-    <button class="sb-link" onclick="showView('members',this)">
+    <button class="sb-link" id="sbMembers" onclick="showView('members',this)">
       <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Miembros
     </button>
-    <button class="sb-link" onclick="showView('apps',this)">
+    <button class="sb-link" id="sbApps" onclick="showView('apps',this)">
       <svg viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Solicitudes Membresía
     </button>
@@ -231,7 +231,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
       Documentos
       <span class="sb-count" id="sbDocsCount">0</span>
     </button>
-    <button class="sb-link" onclick="showView('socios',this)">
+    <button class="sb-link" id="sbSocios" onclick="showView('socios',this)">
       <svg viewBox="0 0 20 20" fill="none"><path d="M3 17V8l7-5 7 5v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="11" width="6" height="6" rx=".5" stroke="currentColor" stroke-width="1.4"/></svg>
       Socios & Talleres
     </button>
@@ -422,6 +422,12 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
           <button class="btn-sm" onclick="saveContract()">Guardar Contrato</button>
           <span id="contractPreviewLink" style="font-size:11px;color:rgba(255,255,255,.35)"></span>
         </div>
+      </div>
+      <!-- Permisos por Rol -->
+      <div class="cfg-card" style="margin-top:16px">
+        <div class="cfg-card-title">Permisos por Rol</div>
+        <p style="font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.04em;margin-bottom:20px;line-height:1.7">Define qué secciones del panel puede ver cada rol. Los cambios aplican en el próximo inicio de sesión del usuario.</p>
+        <div id="rolePermsConfig"></div>
       </div>
       <!-- Invite Codes full-width -->
       <div class="cfg-card" style="margin-top:16px">
@@ -620,7 +626,8 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
       <div class="mfield"><label>Rol</label>
         <select id="stRole">
           <option value="admin">Admin — Acceso completo</option>
-          <option value="concierge">Concierge — Acceso limitado</option>
+          <option value="concierge">Concierge — Vistas configuradas para Concierge</option>
+          <option value="staff">Staff — Vistas configuradas para Staff</option>
         </select>
       </div>
     </div>
@@ -662,6 +669,7 @@ const SB=supabase.createClient(
   if(!session?.user){ location.replace('/login'); return; }
   const role = session.user.app_metadata?.role || '';
   if(!['admin','concierge','staff'].includes(role)){ location.replace('/login'); return; }
+  _AD_ROLE = role;
   // Refrescar localStorage con datos del JWT real
   const display = session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'admin';
   localStorage.setItem('ad_role', role);
@@ -712,6 +720,84 @@ async function saveStaffForcedPassword(){
   }
   document.getElementById('modalForcePassAdmin').classList.remove('open');
   toast('Contraseña actualizada — bienvenido al panel');
+}
+
+// ── ROL ACTIVO ────────────────────────────────────────────────
+let _AD_ROLE = '';
+
+// Vistas configurables por rol (admin siempre ve todo)
+const CONFIGURABLE_VIEWS = [
+  { id:'dashboard',      label:'Dashboard',              btn:'sbDashboard' },
+  { id:'members',        label:'Miembros',               btn:'sbMembers' },
+  { id:'apps',           label:'Solicitudes Membresía',  btn:'sbApps' },
+  { id:'ben-reqs',       label:'Solicitudes AD',         btn:'sbBenReqs' },
+  { id:'pagos',          label:'Comprobantes de Pago',   btn:'sbPagos' },
+  { id:'docs-admin',     label:'Documentos',             btn:'sbDocsAdmin' },
+  { id:'socios',         label:'Socios & Talleres',      btn:'sbSocios' },
+  { id:'concierge-reqs', label:'Solicitudes Concierge',  btn:'sbConciergeReqs' },
+];
+const DEFAULT_PERMS = {
+  concierge: ['dashboard','members','apps','ben-reqs','pagos','docs-admin','socios','concierge-reqs'],
+  staff:     ['dashboard','ben-reqs','pagos','docs-admin','concierge-reqs'],
+};
+
+function applyRolePermissions(role){
+  if(role==='admin') return; // admin ve todo
+  let allowed;
+  const stored=_CFG_GENERAL[`permisos_${role}`];
+  if(stored){try{allowed=JSON.parse(stored);}catch(e){allowed=null;}}
+  allowed=allowed||DEFAULT_PERMS[role]||['dashboard'];
+  CONFIGURABLE_VIEWS.forEach(({id,btn})=>{
+    const el=document.getElementById(btn);
+    if(!el)return;
+    if(!allowed.includes(id)) el.style.setProperty('display','none','important');
+    else el.style.removeProperty('display'); // restablecer por si cambia en sesión
+  });
+}
+
+function renderRolePerms(){
+  const el=document.getElementById('rolePermsConfig');
+  if(!el)return;
+  const roles=['concierge','staff'];
+  const roleLabels={concierge:'Concierge',staff:'Staff'};
+  const currentPerms={};
+  roles.forEach(r=>{
+    const stored=_CFG_GENERAL[`permisos_${r}`];
+    let p=null;
+    if(stored){try{p=JSON.parse(stored);}catch(e){p=null;}}
+    currentPerms[r]=p||DEFAULT_PERMS[r]||[];
+  });
+  el.innerHTML=`
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:360px">
+      <thead><tr>
+        <th style="text-align:left;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.28);padding:10px 0 10px;border-bottom:1px solid rgba(255,255,255,.07)">Vista</th>
+        ${roles.map(r=>`<th style="text-align:center;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.28);padding:10px 24px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap">${roleLabels[r]}</th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${CONFIGURABLE_VIEWS.map(v=>`
+        <tr>
+          <td style="font-size:12px;color:rgba(255,255,255,.65);padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)">${v.label}</td>
+          ${roles.map(r=>`<td style="text-align:center;padding:11px 24px;border-bottom:1px solid rgba(255,255,255,.04)">
+            <input type="checkbox" id="perm_${r}_${v.id}" ${currentPerms[r].includes(v.id)?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:#fff"/>
+          </td>`).join('')}
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div style="margin-top:20px"><button class="btn-sm" onclick="saveRolePerms()">Guardar Permisos</button></div>`;
+}
+
+async function saveRolePerms(){
+  const roles=['concierge','staff'];
+  const rows=roles.map(r=>({
+    key:`permisos_${r}`,
+    value:JSON.stringify(CONFIGURABLE_VIEWS.filter(v=>document.getElementById(`perm_${r}_${v.id}`)?.checked).map(v=>v.id))
+  }));
+  const {error}=await SB.from('config_general').upsert(rows,{onConflict:'key'});
+  if(error){alert('Error: '+error.message);return;}
+  rows.forEach(r=>{_CFG_GENERAL[r.key]=r.value;});
+  toast('Permisos guardados — aplican en el próximo inicio de sesión');
 }
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
@@ -967,6 +1053,7 @@ function renderView(name){
     renderRequiredDocs();
     renderContract();
     renderBenTypes();
+    renderRolePerms();
   }
   setTimeout(refreshMobLabels,0);
 }
@@ -2108,6 +2195,7 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
 
 // ── INIT ──────────────────────────────────────────────────────
 loadAll().then(()=>{
+  applyRolePermissions(_AD_ROLE);
   renderView('dashboard');
   updateBenCount();
 }).catch(err=>{
