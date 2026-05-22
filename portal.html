@@ -1330,6 +1330,7 @@ async function generateReferral(){
   const nota=document.getElementById('refNota').value.trim();
   const btn=document.getElementById('refBtn');
   if(!name||!email){toast('Nombre y email son requeridos');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast('Email inválido');return;}
   btn.disabled=true;btn.textContent='Generando...';
   const m=getMember();
   const code=Math.random().toString(36).substring(2,6).toUpperCase()+'-'+Math.random().toString(36).substring(2,6).toUpperCase();
@@ -1422,7 +1423,7 @@ function render(){
       <div class="ben-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
       ${lockNote}
       <div class="ben-actions" style="margin-top:${locked?'8px':'auto'}">
-        ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\''+(b._btId?',\''+b._btId+'\'':'')+')">Solicitar</button>'}
+        ${locked?'':'<button class="btn-solicitar" data-modal="'+b.modal+'"'+(b._btId?' data-bt="'+b._btId+'"':'')+' onclick="openBenModal(this.dataset.modal,this.dataset.bt||null)">Solicitar</button>'}
         <button class="btn-ver" onclick="showView('beneficios',null)">Ver detalle</button>
       </div>
     </div>`).join('');
@@ -1638,12 +1639,15 @@ function updateBenGenBar(){
   const val=Number(document.getElementById('benGenMonto').value)||0;
   document.getElementById('benGenBar').style.width=Math.min(100,val/max*100)+'%';
 }
+let _benGenSubmitting=false;
 async function submitBenGenerico(){
   if(!_activeBenType){return;}
+  if(_benGenSubmitting){return;}
+  _benGenSubmitting=true;
   const monto=Number(document.getElementById('benGenMonto').value);
   const rest=_activeBenType.rest;
-  if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
-  if(monto>rest){alert('El monto supera tu saldo disponible ('+fmtMXN(rest)+' '+_activeBenType.unit+')');return;}
+  if(!monto||monto<=0){_benGenSubmitting=false;alert('Ingresa un monto válido');return;}
+  if(monto>rest){_benGenSubmitting=false;alert('El monto supera tu saldo disponible ('+fmtMXN(rest)+' '+_activeBenType.unit+')');return;}
   const notas=document.getElementById('benGenNotas').value.trim();
   const m=getMember();
   const req={
@@ -1659,6 +1663,7 @@ async function submitBenGenerico(){
     admin_nota:'',
   };
   const {data:d,error}=await SB.from('benefit_requests').insert(req).select().single();
+  _benGenSubmitting=false;
   if(error){alert('Error al enviar: '+error.message);return;}
   _myReqs.unshift(d||req);
   closeModal('modalBenGenerico');
@@ -1666,31 +1671,35 @@ async function submitBenGenerico(){
   render();
 }
 // ── SUBMIT BENEFIT ────────────────────────────────────────────
+let _benefitSubmitting=false;
 async function submitBenefit(tipo){
+  if(_benefitSubmitting){return;}
+  _benefitSubmitting=true;
   let detalle='', monto=null, notas='';
 
+  const _releaseBen=()=>{_benefitSubmitting=false;};
   if(tipo==='Road Tour VIP'){
     const sel=document.getElementById('rtFechaSelect');
     const opt=sel.options[sel.selectedIndex];
-    if(!opt||!opt.value){alert('Por favor selecciona una fecha');return;}
+    if(!opt||!opt.value){_releaseBen();alert('Por favor selecciona una fecha');return;}
     detalle=opt.text;
     notas=document.getElementById('rtNotas').value.trim();
   }
   if(tipo==='Beneficio en Efectivo'){
     monto=Number(document.getElementById('efMonto').value);
     const max=Number(document.getElementById('efMonto').dataset.max)||150000;
-    if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
-    if(monto>max){alert('El monto supera tu saldo disponible ('+fmtMXN(max)+' MXN)');return;}
+    if(!monto||monto<=0){_releaseBen();alert('Ingresa un monto válido');return;}
+    if(monto>max){_releaseBen();alert('El monto supera tu saldo disponible ('+fmtMXN(max)+' MXN)');return;}
     if(_payMethod==='spei'){
       const clabe=document.getElementById('efClabe').value.trim();
       const banco=document.getElementById('efBanco').value;
-      if(!clabe||clabe.length!==18){alert('Ingresa una CLABE de 18 dígitos');return;}
-      if(!banco){alert('Selecciona tu banco');return;}
+      if(!clabe||clabe.length!==18){_releaseBen();alert('Ingresa una CLABE de 18 dígitos');return;}
+      if(!banco){_releaseBen();alert('Selecciona tu banco');return;}
       detalle='SPEI · CLABE ···'+clabe.slice(-4)+' · '+banco;
     } else {
       const wallet=document.getElementById('efWallet').value.trim();
       const red=document.getElementById('efRed').value;
-      if(!wallet){alert('Ingresa tu dirección de wallet USDT');return;}
+      if(!wallet){_releaseBen();alert('Ingresa tu dirección de wallet USDT');return;}
       detalle='USDT · '+red.split(' ')[0]+' · ···'+wallet.slice(-6);
     }
     notas=(_payMethod==='usdt'?'[USDT] ':'[SPEI] ')+document.getElementById('efConcepto').value.trim();
@@ -1702,10 +1711,10 @@ async function submitBenefit(tipo){
     monto=Number(document.getElementById('svMonto').value);
     const max=Number(document.getElementById('svMonto').dataset.max)||50000;
     const socioLim=Number(opt?.dataset?.lim)||Infinity;
-    if(!socioId){alert('Selecciona un socio');return;}
-    if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
-    if(monto>max){alert('El monto supera tu crédito disponible ('+fmtMXN(max)+' MXN)');return;}
-    if(monto>socioLim){alert('El monto supera el límite de este socio ('+fmtMXN(socioLim)+' MXN)');return;}
+    if(!socioId){_releaseBen();alert('Selecciona un socio');return;}
+    if(!monto||monto<=0){_releaseBen();alert('Ingresa un monto válido');return;}
+    if(monto>max){_releaseBen();alert('El monto supera tu crédito disponible ('+fmtMXN(max)+' MXN)');return;}
+    if(monto>socioLim){_releaseBen();alert('El monto supera el límite de este socio ('+fmtMXN(socioLim)+' MXN)');return;}
     detalle=opt.text.split(' — ')[0];
     notas=document.getElementById('svDesc').value.trim()+' · Fecha: '+document.getElementById('svFecha').value;
   }
@@ -1743,6 +1752,7 @@ async function submitBenefit(tipo){
     req.sv_socio_nombre=sel.options[sel.selectedIndex]?.text?.split(' — ')[0]||'';
   }
   const {data:d,error}=await SB.from('benefit_requests').insert(req).select().single();
+  _releaseBen();
   if(error){alert('Error al enviar: '+error.message);return;}
   _myReqs.unshift(d||req);
 

@@ -91,7 +91,7 @@ const SB = supabase.createClient(
 (async () => {
   const { data: { session } } = await SB.auth.getSession();
   if (session?.user) {
-    const role = session.user.app_metadata?.role || session.user.user_metadata?.role || 'member';
+    const role = session.user.app_metadata?.role || 'member';
     location.replace(['admin','concierge','staff'].includes(role) ? '/admin' : '/portal');
   }
 })();
@@ -122,8 +122,8 @@ async function doLogin() {
     return;
   }
 
-  const role     = data.user.app_metadata?.role || data.user.user_metadata?.role || 'member';
-  const memberId = data.user.app_metadata?.member_id || data.user.user_metadata?.member_id;
+  const role     = data.user.app_metadata?.role || 'member';
+  const memberId = data.user.app_metadata?.member_id;
   // Nombre de display: parte antes del @ si es email real, o el raw si es usuario corto
   const display  = raw.includes('@') ? raw.split('@')[0] : raw;
 
