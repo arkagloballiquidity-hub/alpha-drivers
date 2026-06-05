@@ -324,42 +324,59 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
 }
 .mob-apply{display:none}
 @media(max-width:768px){
-  /* Nav */
-  nav{height:50px;padding:0 16px}
-  .nl{display:flex;align-items:center}
-  .nl img{width:88px!important;height:auto;max-height:28px!important;object-fit:contain;display:block}
+  /* Nav — altura fija, logo llena todo el alto */
+  nav{height:52px;padding:0 16px}
+  .nl{display:flex;align-items:center;height:100%}
+  .nl img{height:52px!important;width:auto!important;max-height:none!important;object-fit:contain;display:block}
   .nls{display:none}
   .nb{font-size:9px;padding:8px 12px;letter-spacing:.12em}
   .bk-label{display:none}
   .nb-full{display:none}
 
-  /* Panels: tighter padding, scrub experience igual que desktop */
-  .sp{padding:72px 6% 52px}
+  /* Panels: padding compacto + justify inicio para que el contenido no se corte */
+  .sp{padding:58px 5% 24px;justify-content:flex-start;overflow:hidden}
   #sec-ind{display:none}
 
-  /* Stats: smaller and repositioned so they don't overlap content */
-  .sp-stats{right:16px;bottom:6%}
-  .sp-sv{font-size:28px}
-  .sp-sl{font-size:9px;letter-spacing:.1em}
-  .sp-si{padding:10px 0}
-  /* Limit content width so it doesn't clash with right-side stats */
-  .sp-sub,.sp-body{max-width:62%}
+  /* Títulos más pequeños en mobile para que quepa el contenido */
+  .sp-h2{font-size:clamp(36px,11vw,72px);margin-bottom:10px}
+  .sp-h3{font-size:clamp(28px,8vw,52px);margin-bottom:10px}
+  .sp-tag{font-size:13px;margin-bottom:8px}
+  .sp-sub,.sp-body{font-size:13px;line-height:1.6;margin-bottom:16px;max-width:100%}
+
+  /* Stats hero */
+  .sp-stats{right:12px;bottom:4%}
+  .sp-sv{font-size:24px}
+  .sp-sl{font-size:8px;letter-spacing:.08em}
+  .sp-si{padding:7px 0}
   .sp-ctas{max-width:68%}
   .nb,.ob{white-space:nowrap;font-size:10px;padding:10px 18px}
 
   /* Grid layouts */
-  .sp-club-wrap,.sp-ben-wrap,.sp-exp-wrap,.sp-tier-wrap{grid-template-columns:1fr;gap:24px}
-  .sp-cards{grid-template-columns:1fr}
+  .sp-club-wrap,.sp-ben-wrap,.sp-exp-wrap,.sp-tier-wrap{grid-template-columns:1fr;gap:16px}
+  .sp-bd{margin-bottom:8px}
+  .sp-cards{grid-template-columns:1fr 1fr;gap:2px}
+  .sp-card{padding:14px 12px}
+  .sp-ctit{font-size:13px}
+  .sp-cbod{font-size:11px;line-height:1.5}
+  .sp-cn{font-size:10px}
   .sp-bens{grid-template-columns:1fr 1fr}
   .sp-bens-3{grid-template-columns:1fr}
+  .sp-ben{padding:14px 12px}
+  .sp-btit{font-size:12px}
+  .sp-bval{font-size:18px!important}
+  .sp-bper,.sp-bdsc{font-size:11px}
   .car-duo{grid-template-columns:1fr;grid-template-rows:auto auto}
-  .car-img{height:52vw;min-height:180px}
-  /* Experiences list — prevent overflow */
+  .car-img{height:40vw;min-height:140px}
+  /* Experiences list */
   .sp-list{width:100%;box-sizing:border-box}
-  .sp-li{word-break:break-word;white-space:normal}
+  .sp-li{word-break:break-word;white-space:normal;font-size:13px;padding:8px 0}
+
+  /* Tier panels */
+  .sp-tier-wrap{gap:12px}
+  .sp-tlist li{font-size:12px;padding:7px 0}
 
   /* Counter panel */
-  .sp-ctr{font-size:clamp(72px,20vw,140px)}
+  .sp-ctr{font-size:clamp(60px,18vw,120px)}
 
   /* Form */
   #form{padding:80px 20px}
@@ -418,7 +435,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
 <!-- NAV -->
 <nav id="nav">
   <a href="#" class="nl">
-    <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="width:150px;height:auto;max-height:36px;object-fit:contain;display:block"/>
+    <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="height:58px;width:auto;object-fit:contain;display:block"/>
   </a>
   <div class="nav-right">
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">ES</button>
