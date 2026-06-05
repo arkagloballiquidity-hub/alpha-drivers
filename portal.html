@@ -634,15 +634,15 @@ tr:last-child td{border-bottom:none}
   </div>
 </main>
 
-<!-- MODAL: ROAD TOUR VIP -->
+<!-- MODAL: EVENTO PRINCIPAL ALPHA DRIVERS -->
 <div class="overlay" id="modalRoadTour" onclick="closeOverlay(event,'modalRoadTour')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-hd">
-      <div class="modal-title">Road Tour VIP</div>
+      <div class="modal-title">Evento Principal Alpha Drivers</div>
       <button class="modal-close" onclick="closeModal('modalRoadTour')">×</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Elige la fecha de Road Tour a la que deseas inscribirte. Tu cupo quedará reservado una vez que el equipo Alpha Drivers confirme tu solicitud.</p>
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Elige el evento al que deseas inscribirte. Tu cupo quedará reservado una vez que el equipo Alpha Drivers confirme tu solicitud. Incluye madrina para tu auto (topado según tu nivel de membresía).</p>
       <div class="mfield">
         <label>Fecha disponible</label>
         <select id="rtFechaSelect"><option value="">Cargando...</option></select>
@@ -654,20 +654,20 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="modal-foot">
       <button class="btn-sm-out" onclick="closeModal('modalRoadTour')">Cancelar</button>
-      <button class="btn-sm" onclick="submitBenefit('Road Tour VIP')">Enviar Solicitud</button>
+      <button class="btn-sm" onclick="submitBenefit('Evento Principal Alpha Drivers')">Enviar Solicitud</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: BENEFICIO EN EFECTIVO -->
+<!-- MODAL: BENEFICIO ANUAL DE MIEMBRO -->
 <div class="overlay" id="modalEfectivo" onclick="closeOverlay(event,'modalEfectivo')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-hd">
-      <div class="modal-title">Beneficio en Efectivo</div>
+      <div class="modal-title">Beneficio Anual de Miembro</div>
       <button class="modal-close" onclick="closeModal('modalEfectivo')">×</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Solicita la dispersión de tu beneficio. El equipo Alpha Drivers procesará el pago en un máximo de 5 días hábiles.</p>
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Solicita la dispersión de tu beneficio anual. El equipo Alpha Drivers procesará el pago en un máximo de 5 días hábiles.</p>
       <div class="mfield">
         <label>Método de pago</label>
         <div style="display:flex;gap:8px">
@@ -725,20 +725,20 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="modal-foot">
       <button class="btn-sm-out" onclick="closeModal('modalEfectivo')">Cancelar</button>
-      <button class="btn-sm" onclick="submitBenefit('Beneficio en Efectivo')">Enviar Solicitud</button>
+      <button class="btn-sm" onclick="submitBenefit('Beneficio Anual de Miembro')">Enviar Solicitud</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: CRÉDITO DE SERVICIO -->
+<!-- MODAL: BONO DE SERVICIO AUTOMOTRIZ -->
 <div class="overlay" id="modalServicio" onclick="closeOverlay(event,'modalServicio')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-hd">
-      <div class="modal-title">Crédito de Servicio</div>
+      <div class="modal-title">Bono de Servicio Automotriz</div>
       <button class="modal-close" onclick="closeModal('modalServicio')">×</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Selecciona el socio donde deseas utilizar tu crédito y el monto a aplicar. El crédito se aplica directo al negocio — no es transferible a efectivo.</p>
+      <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:24px">Selecciona el socio donde deseas utilizar tu bono y el monto a aplicar. El bono se aplica directo al negocio — no es transferible a efectivo.</p>
       <div class="mfield">
         <label>Socio / Taller</label>
         <select id="svSocio" onchange="updateSvBar()"><option value="">Selecciona un socio...</option></select>
@@ -761,7 +761,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="modal-foot">
       <button class="btn-sm-out" onclick="closeModal('modalServicio')">Cancelar</button>
-      <button class="btn-sm" onclick="submitBenefit('Crédito de Servicio')">Enviar Solicitud</button>
+      <button class="btn-sm" onclick="submitBenefit('Bono de Servicio Automotriz')">Enviar Solicitud</button>
     </div>
   </div>
 </div>
@@ -884,7 +884,7 @@ let _MEMBER_ID=null; // Siempre desde JWT, nunca desde localStorage sin verifica
 })();
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
-let _member=null,_memberUser=null,_socios=[],_roadTours=[],_limites={'Alpha Premium':{efectivo:150000,servicio:50000},'Alpha':{efectivo:100000,servicio:30000}},_myReqs=[],
+let _member=null,_memberUser=null,_socios=[],_roadTours=[],_limites={'Alpha ONE':{efectivo:150000,servicio:50000},'Alpha BLACK':{efectivo:450000,servicio:70000}},_myReqs=[],
     _myDocs=[],_myPayments=[],_myReferrals=[],_reqDocs=[],_cfgGeneral={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
     _myPhotos=[],_memberReqDocs=[],_benTypes=[],_benLimits=[],_memberBens=[],
     _cc={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'};
@@ -941,7 +941,7 @@ async function loadAll(){
   }
 }
 
-function getMember(){return _member||{id:'001',name:'Miembro Alpha',nivel:'Alpha Premium',status:'Activo',date:'Enero 2025',city:'',vehicle:'',email:''};}
+function getMember(){return _member||{id:'001',name:'Miembro Alpha',nivel:'Alpha ONE',status:'Activo',date:'Enero 2025',city:'',vehicle:'',email:''};}
 function getSocios(){return _socios;}
 function getRoadTours(){return _roadTours;}
 function getLimites(){return _limites;}
@@ -971,12 +971,12 @@ function areBenefitsLocked(){
 function servicioUsado(){
   const range=getBenefitYearRange();
   if(!range) return 0;
-  return _myReqs.filter(r=>r.tipo==='Crédito de Servicio'&&r.status!=='Rechazado'&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye).reduce((s,r)=>s+(Number(r.monto)||0),0);
+  return _myReqs.filter(r=>r.tipo==='Bono de Servicio Automotriz'&&r.status!=='Rechazado'&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye).reduce((s,r)=>s+(Number(r.monto)||0),0);
 }
 function efectivoUsado(){
   const range=getBenefitYearRange();
   if(!range) return 0;
-  return _myReqs.filter(r=>r.tipo==='Beneficio en Efectivo'&&r.status!=='Rechazado'&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye).reduce((s,r)=>s+(Number(r.monto)||0),0);
+  return _myReqs.filter(r=>r.tipo==='Beneficio Anual de Miembro'&&r.status!=='Rechazado'&&new Date(r.created_at||r.fecha)>=range.ys&&new Date(r.created_at||r.fecha)<range.ye).reduce((s,r)=>s+(Number(r.monto)||0),0);
 }
 
 // ── BENEFITS CONFIG ───────────────────────────────────────────
@@ -988,7 +988,7 @@ function fmtISODate(iso){
 function getBenData(){
   const m=getMember();
   const locked=areBenefitsLocked();
-  const nivel=m.nivel||'Alpha Premium';
+  const nivel=m.nivel||'Alpha ONE';
   const lim=getLimites()[nivel]||{efectivo:150000,servicio:50000};
   const range=getBenefitYearRange();
   const svUsado=locked?0:servicioUsado();
@@ -996,10 +996,9 @@ function getBenData(){
   const svRest=Math.max(0,lim.servicio-svUsado);
   const efRest=Math.max(0,lim.efectivo-efUsado);
   const bens=[
-    {id:'tour',num:'01',title:'Road Tour VIP',desc:'Acceso a todos los Road Tours organizados por Alpha Drivers. Experiencias exclusivas en circuito y carretera con los mejores supercars de México.',val:'1 / 10',unit:'Años completados',pct:10,lbl1:'Año 1',lbl2:'10% completado',tag:'En curso',modal:'modalRoadTour'},
-    {id:'efectivo',num:'02',title:'Beneficio en Efectivo',desc:'Bono anual en efectivo disponible para gastar en lo que prefieras. Se renueva cada año de membresía activa.',val:fmtMXN(efRest),unit:'MXN disponibles',pct:Math.round(efUsado/lim.efectivo*100),lbl1:fmtMXN(efUsado)+' utilizado',lbl2:fmtMXN(efRest)+' restante',tag:'Activo',modal:'modalEfectivo',limite:lim.efectivo,usado:efUsado},
-    {id:'servicio',num:'03',title:'Crédito de Servicio',desc:'Crédito para usar en nuestra red de socios: talleres, detailing, aseguradores, restaurantes y más.',val:fmtMXN(svRest),unit:'MXN en red de socios',pct:Math.round(svUsado/lim.servicio*100),lbl1:fmtMXN(svUsado)+' utilizado',lbl2:fmtMXN(svRest)+' restante',tag:'En uso',modal:'modalServicio',limite:lim.servicio,usado:svUsado},
-    {id:'eco',num:'04',title:'Ecosistema AD',desc:'Participación en el ecosistema Alpha Drivers. Recibes un porcentaje de los ingresos anuales del club como miembro fundador.',val:'5%',unit:'Participación anual compartida',pct:100,lbl1:'Activo',lbl2:'Confirmado',tag:'Confirmado',modal:'modalEcosistema'},
+    {id:'tour',num:'01',title:'Evento Principal Alpha Drivers',desc:'Acceso al evento principal anual Alpha Drivers. Incluye madrina para tu auto. Cupo reservado una vez confirmada tu solicitud.',val:'1 / 10',unit:'Años completados',pct:10,lbl1:'Año 1',lbl2:'10% completado',tag:'En curso',modal:'modalRoadTour'},
+    {id:'efectivo',num:'02',title:'Beneficio Anual de Miembro',desc:'Beneficio anual en efectivo como parte de tu membresía activa. Se renueva cada año de vigencia.',val:fmtMXN(efRest),unit:'MXN disponibles',pct:Math.round(efUsado/lim.efectivo*100),lbl1:fmtMXN(efUsado)+' utilizado',lbl2:fmtMXN(efRest)+' restante',tag:'Activo',modal:'modalEfectivo',limite:lim.efectivo,usado:efUsado},
+    {id:'servicio',num:'03',title:'Bono de Servicio Automotriz',desc:'Bono anual para usar en talleres y socios de servicio dentro de la red Alpha Drivers.',val:fmtMXN(svRest),unit:'MXN en red de socios',pct:Math.round(svUsado/lim.servicio*100),lbl1:fmtMXN(svUsado)+' utilizado',lbl2:fmtMXN(svRest)+' restante',tag:'En uso',modal:'modalServicio',limite:lim.servicio,usado:svUsado},
   ];
   // Append per-member custom benefits
   _memberBens.forEach(mb=>{
@@ -1394,13 +1393,13 @@ function render(){
   document.getElementById('topMemberNum').textContent='Miembro #'+numDisplay;
   document.getElementById('memberName').textContent=m.name||m.nombre||'Miembro Alpha';
   document.getElementById('memberNumLarge').textContent=numDisplay;
-  document.getElementById('memberMeta').textContent=(m.nivel||'Alpha Premium')+' · Miembro activo desde '+(m.date||m.ingreso||'Enero 2025');
+  document.getElementById('memberMeta').textContent=(m.nivel||'Alpha ONE')+' · Miembro activo desde '+(m.date||m.ingreso||'Enero 2025');
 
   const panelEstado=document.getElementById('panelEstado');
   const panelNote=document.getElementById('panelEstadoNote');
   if(m.status==='Activo'){panelEstado.textContent='Activo';panelEstado.style.color='var(--green)';panelNote.textContent='Membresía vigente';panelNote.style.color='var(--green)';}
   else{panelEstado.textContent=m.status||'Pendiente';panelEstado.style.color='var(--amber)';panelNote.textContent='Contacta al concierge';panelNote.style.color='var(--amber)';}
-  document.getElementById('panelNivel').textContent=m.nivel||'Alpha Premium';
+  document.getElementById('panelNivel').textContent=m.nivel||'Alpha ONE';
   // Benefit year info
   const locked=areBenefitsLocked();
   const range=getBenefitYearRange();
@@ -1550,7 +1549,7 @@ function openBenModal(modalId,btId){
     } else {
       const bt=_benTypes.find(x=>x.id===btId);
       if(!bt)return;
-      const m=getMember();const nivel=m.nivel||'Alpha Premium';
+      const m=getMember();const nivel=m.nivel||'Alpha ONE';
       const btLim=_benLimits.find(l=>l.benefit_type_id===btId&&l.nivel===nivel);
       name=bt.name;descripcion=bt.descripcion||bt.name;unit=bt.unit||'MXN';maxAmt=Number(btLim?.max_amount||0);
     }
@@ -1582,7 +1581,7 @@ function openBenModal(modalId,btId){
   }
   // Efectivo: set limit hint + reset pay method
   if(modalId==='modalEfectivo'){
-    const m=getMember();const lim=getLimites()[m.nivel||'Alpha Premium']||{efectivo:150000};
+    const m=getMember();const lim=getLimites()[m.nivel||'Alpha ONE']||{efectivo:150000};
     const usado=efectivoUsado();const rest=Math.max(0,lim.efectivo-usado);
     document.getElementById('efHint').textContent='Disponible: '+fmtMXN(rest)+' MXN';
     document.getElementById('efMonto').dataset.max=rest;
@@ -1598,7 +1597,7 @@ function openBenModal(modalId,btId){
     const socios=getSocios();
     const sel=document.getElementById('svSocio');
     sel.innerHTML='<option value="">Selecciona un socio...</option>'+socios.map(s=>`<option value="${s.id}" data-lim="${s.limite}">${s.nombre} — ${s.categoria} (límite ${fmtMXN(s.limite)})</option>`).join('');
-    const m=getMember();const lim=getLimites()[m.nivel||'Alpha Premium']||{servicio:50000};
+    const m=getMember();const lim=getLimites()[m.nivel||'Alpha ONE']||{servicio:50000};
     const usado=servicioUsado();const rest=Math.max(0,lim.servicio-usado);
     document.getElementById('svHint').textContent='Crédito restante: '+fmtMXN(rest)+' MXN';
     document.getElementById('svMonto').dataset.max=rest;
@@ -1682,14 +1681,14 @@ async function submitBenefit(tipo){
   let detalle='', monto=null, notas='';
 
   const _releaseBen=()=>{_benefitSubmitting=false;};
-  if(tipo==='Road Tour VIP'){
+  if(tipo==='Evento Principal Alpha Drivers'){
     const sel=document.getElementById('rtFechaSelect');
     const opt=sel.options[sel.selectedIndex];
     if(!opt||!opt.value){_releaseBen();alert('Por favor selecciona una fecha');return;}
     detalle=opt.text;
     notas=document.getElementById('rtNotas').value.trim();
   }
-  if(tipo==='Beneficio en Efectivo'){
+  if(tipo==='Beneficio Anual de Miembro'){
     monto=Number(document.getElementById('efMonto').value);
     const max=Number(document.getElementById('efMonto').dataset.max)||150000;
     if(!monto||monto<=0){_releaseBen();alert('Ingresa un monto válido');return;}
@@ -1708,7 +1707,7 @@ async function submitBenefit(tipo){
     }
     notas=(_payMethod==='usdt'?'[USDT] ':'[SPEI] ')+document.getElementById('efConcepto').value.trim();
   }
-  if(tipo==='Crédito de Servicio'){
+  if(tipo==='Bono de Servicio Automotriz'){
     const sel=document.getElementById('svSocio');
     const socioId=sel.value;
     const opt=sel.options[sel.selectedIndex];
@@ -1733,7 +1732,7 @@ async function submitBenefit(tipo){
     fecha:new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}),
     admin_nota:'',
   };
-  if(tipo==='Beneficio en Efectivo'){
+  if(tipo==='Beneficio Anual de Miembro'){
     req.pay_method=_payMethod;
     if(_payMethod==='spei'){
       req.pay_details={
@@ -1749,7 +1748,7 @@ async function submitBenefit(tipo){
       };
     }
   }
-  if(tipo==='Crédito de Servicio'){
+  if(tipo==='Bono de Servicio Automotriz'){
     req.sv_fecha=document.getElementById('svFecha').value;
     req.sv_desc=document.getElementById('svDesc').value.trim();
     const sel=document.getElementById('svSocio');
