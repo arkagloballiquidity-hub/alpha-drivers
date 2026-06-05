@@ -190,6 +190,12 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
   .modal-foot{padding:16px 18px;flex-wrap:wrap}
   .md-row{flex-direction:column;gap:8px}
 }
+.pg-bar{display:flex;align-items:center;gap:6px;justify-content:flex-end;padding:10px 0 4px;flex-wrap:wrap}
+.pg-bar button{background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);padding:4px 10px;font-size:11px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.pg-bar button:hover{border-color:rgba(255,255,255,.4);color:#fff}
+.pg-bar button.pg-active{border-color:rgba(255,255,255,.5);color:#fff;background:rgba(255,255,255,.06)}
+.pg-bar button:disabled{opacity:.25;cursor:default}
+.pg-info{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.04em;margin-right:auto}
 </style>
 <script
   src="https://js.sentry-cdn.com/e07b082273bfb342bb28f68e98b8f296.min.js"
@@ -315,18 +321,21 @@ tr.clickable:hover td{background:rgba(255,255,255,.03);color:#fff}
         <button class="btn-sm" onclick="openAddMember()">+ Agregar Miembro</button>
       </div>
       <div class="table-wrap"><table><thead><tr><th>#</th><th>Nombre</th><th>Ciudad</th><th>Vehículo</th><th>Ingreso</th><th>Estado</th><th>Portal</th><th></th></tr></thead><tbody id="membersBody"></tbody></table></div>
+      <div class="pg-bar" id="membersPg"></div>
     </div>
 
     <!-- APPLICATIONS -->
     <div class="view" id="view-apps">
       <div class="sec-hd"><div class="sec-title">Solicitudes de Membresía</div></div>
       <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Ciudad</th><th>Vehículo</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody id="appsBody"></tbody></table></div>
+      <div class="pg-bar" id="appsPg"></div>
     </div>
 
     <!-- BENEFIT REQUESTS -->
     <div class="view" id="view-ben-reqs">
       <div class="sec-hd"><div class="sec-title">Solicitudes de Beneficios</div></div>
       <div class="table-wrap"><table><thead><tr><th>Miembro</th><th>Beneficio</th><th>Detalle</th><th>Monto</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody id="benReqsBody"></tbody></table></div>
+      <div class="pg-bar" id="benReqsPg"></div>
     </div>
 
     <!-- SOCIOS & TALLERES -->
@@ -818,6 +827,29 @@ let _M=[],_MU=[],_A=[],_S=[],_RT=[],_BR=[],_STAFF=[],_PAGOS=[],_DOCS=[],_ICODES=
     _CC={email:'concierge@alphadrivers.mx',whatsapp:'+52 55 0000 0000',horario:'Lun–Vie · 9am–8pm'},
     _REQ_DOCS=[],_CFG_GENERAL={contract_url:'',contract_filename:'Contrato_Alpha_Drivers.pdf'},
     _EPHOTOS=[],_BEN_TYPES=[],_BEN_LIMITS=[],_MEMBER_DOCS={},_MEMBER_BENS={};
+const _PG={members:1,apps:1,benReqs:1};
+const PG_SIZE=20;
+function _pgRender(key,items,bodyId,pgBarId,rowFn,emptyMsg,cols){
+  const total=items.length;
+  const pages=Math.max(1,Math.ceil(total/PG_SIZE));
+  const p=Math.min(_PG[key],pages);
+  _PG[key]=p;
+  const slice=items.slice((p-1)*PG_SIZE,p*PG_SIZE);
+  document.getElementById(bodyId).innerHTML=slice.map(rowFn).join('')
+    ||`<tr><td colspan="${cols}" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">${emptyMsg}</td></tr>`;
+  const bar=document.getElementById(pgBarId);
+  if(pages<=1){bar.innerHTML='';return;}
+  let btns=`<span class="pg-info">${total} registros</span>`;
+  btns+=`<button ${p===1?'disabled':''} onclick="_pgGo('${key}',1)">«</button>`;
+  btns+=`<button ${p===1?'disabled':''} onclick="_pgGo('${key}',${p-1})">‹</button>`;
+  for(let i=Math.max(1,p-2);i<=Math.min(pages,p+2);i++)
+    btns+=`<button class="${i===p?'pg-active':''}" onclick="_pgGo('${key}',${i})">${i}</button>`;
+  btns+=`<button ${p===pages?'disabled':''} onclick="_pgGo('${key}',${p+1})">›</button>`;
+  btns+=`<button ${p===pages?'disabled':''} onclick="_pgGo('${key}',${pages})">»</button>`;
+  bar.innerHTML=btns;
+}
+function _pgGo(key,n){_PG[key]=n;renderView(_currentView);}
+let _currentView='dashboard';
 
 async function loadAll(){
   const [m,mu,a,s,rt,br,lim,cc,staff,pagos,docs,icodes,rdocs,cgen,ephotos,benTypes,benLims,creqs]=await Promise.all([
@@ -830,8 +862,8 @@ async function loadAll(){
     SB.from('config_limites').select('*'),
     SB.from('config_concierge').select('*'),
     SB.from('admin_users').select('*').order('created_at'),
-    SB.from('payment_proofs').select('id,member_id,member_name,filename,file_type,file_data,status,uploaded_at,admin_nota').order('uploaded_at',{ascending:false}),
-    SB.from('member_documents').select('id,member_id,member_name,filename,file_type,file_data,doc_type,status,uploaded_at,admin_nota').order('uploaded_at',{ascending:false}),
+    SB.from('payment_proofs').select('id,member_id,member_name,filename,file_type,status,uploaded_at,admin_nota').order('uploaded_at',{ascending:false}),
+    SB.from('member_documents').select('id,member_id,member_name,filename,file_type,doc_type,status,uploaded_at,admin_nota').order('uploaded_at',{ascending:false}),
     SB.from('invite_codes').select('*').order('created_at',{ascending:false}),
     SB.from('config_required_docs').select('*').order('orden'),
     SB.from('config_general').select('*'),
@@ -938,6 +970,7 @@ function showView(name,btn){
   renderView(name);
 }
 function renderView(name){
+  _currentView=name;
   updateBenCount();
   if(name==='dashboard'){
     document.getElementById('kpiActive').textContent=_M.filter(m=>m.status==='Activo').length;
@@ -956,7 +989,7 @@ function renderView(name){
       ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:24px">Sin solicitudes pendientes</td></tr>';
   }
   if(name==='members'){
-    document.getElementById('membersBody').innerHTML=_M.map(m=>{
+    _pgRender('members',_M,'membersBody','membersPg',m=>{
       const mu=_MU.find(u=>u.member_id===m.id);
       const portalBadge=mu
         ?(mu.active!==false
@@ -970,22 +1003,22 @@ function renderView(name){
         <td>${portalBadge}</td>
         <td><button class="tbl-action" data-id="${_esc(m.id)}" onclick="event.stopPropagation();openMember(this.dataset.id)">Ver →</button></td>
       </tr>`;
-    }).join('')||'<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin miembros registrados</td></tr>';
+    },'Sin miembros registrados',8);
   }
   if(name==='apps'){
-    document.getElementById('appsBody').innerHTML=_A.map(a=>`
+    _pgRender('apps',_A,'appsBody','appsPg',a=>`
       <tr><td>${_esc(a.name)}</td><td>${_esc(a.city)}</td><td>${_esc(a.vehicle)}</td><td>${_esc(a.date)}</td>
       <td><span class="status ${statusClass(a.status)}">${_esc(a.status)}</span></td>
-      <td><button class="tbl-action" data-id="${_esc(a.id)}" onclick="openApp(this.dataset.id)">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`).join('')
-      ||'<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes</td></tr>';
+      <td><button class="tbl-action" data-id="${_esc(a.id)}" onclick="openApp(this.dataset.id)">${a.status==='Aprobado'||a.status==='Rechazado'?'Ver →':'Revisar →'}</button></td></tr>`,
+      'Sin solicitudes',6);
   }
   if(name==='ben-reqs'){
-    document.getElementById('benReqsBody').innerHTML=_BR.length?[..._BR].map(r=>`
+    _pgRender('benReqs',[..._BR],'benReqsBody','benReqsPg',r=>`
       <tr><td>${_esc(r.member_name)}</td><td>${_esc(r.tipo)}</td><td style="color:rgba(255,255,255,.5);font-size:11px">${_esc(r.detalle||'')}</td>
       <td>${r.monto?fmtMXN(r.monto):'-'}</td><td style="font-size:11px">${_esc(r.fecha)}</td>
       <td><span class="status ${statusClass(r.status)}">${_esc(r.status)}</span></td>
-      <td><button class="tbl-action" data-id="${_esc(r.id)}" onclick="openBenReq(this.dataset.id)">Ver →</button></td></tr>`).join('')
-      :'<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,.3);padding:32px">Sin solicitudes de beneficios</td></tr>';
+      <td><button class="tbl-action" data-id="${_esc(r.id)}" onclick="openBenReq(this.dataset.id)">Ver →</button></td></tr>`,
+      'Sin solicitudes de beneficios',7);
   }
   if(name==='socios'){
     document.getElementById('sociosBody').innerHTML=_S.map(s=>`
@@ -1814,11 +1847,18 @@ async function deleteStaff(id){
 
 // ── PAYMENT PROOFS ────────────────────────────────────────────
 let currentPagoId=null;
-function openPago(id){
+async function openPago(id){
   const p=_PAGOS.find(x=>x.id===id);if(!p)return;
   currentPagoId=id;
   const decided=p.status==='Aprobado'||p.status==='Rechazado';
-  let previewHtml='';
+  let previewHtml='<div style="margin-bottom:16px;color:rgba(255,255,255,.3);font-size:11px">Cargando archivo…</div>';
+  openModal('modalPago');
+  document.getElementById('pagoBody').innerHTML=`<div style="padding:32px;text-align:center;color:rgba(255,255,255,.3);font-size:11px;letter-spacing:.1em">CARGANDO…</div>`;
+  if(!p.file_data){
+    const {data}=await SB.from('payment_proofs').select('file_data').eq('id',id).single();
+    if(data?.file_data)p.file_data=data.file_data;
+  }
+  previewHtml='';
   if(p.file_data&&/^data:/.test(p.file_data)){
     if(p.file_type&&p.file_type.startsWith('image/')){
       previewHtml=`<div style="margin-bottom:16px"><img src="${p.file_data}" style="max-width:100%;border:1px solid rgba(255,255,255,.1)" alt="${_esc(p.filename||'Comprobante')}"/></div>`;
@@ -1834,7 +1874,6 @@ function openPago(id){
     ${decided?'':`<div style="margin-top:12px"><div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Nota (opcional)</div><textarea id="pagoNota" rows="2" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 12px;font-family:var(--b);font-size:12px;outline:none;resize:vertical" placeholder="Ej. Pago confirmado para membresía 2025"></textarea></div>`}`;
   document.getElementById('pagoRejectBtn').style.display=decided?'none':'';
   document.getElementById('pagoApproveBtn').style.display=decided?'none':'';
-  openModal('modalPago');
 }
 async function decidePago(decision){
   const p=_PAGOS.find(x=>x.id===currentPagoId);if(!p)return;
@@ -1858,9 +1897,15 @@ async function decidePago(decision){
 
 // ── MEMBER DOCUMENTS ──────────────────────────────────────────
 let currentDocAdminId=null;
-function openDoc(id){
+async function openDoc(id){
   const d=_DOCS.find(x=>x.id===id);if(!d)return;
   currentDocAdminId=id;
+  openModal('modalDocAdmin');
+  document.getElementById('docAdminBody').innerHTML=`<div style="padding:32px;text-align:center;color:rgba(255,255,255,.3);font-size:11px;letter-spacing:.1em">CARGANDO…</div>`;
+  if(!d.file_data){
+    const {data}=await SB.from('member_documents').select('file_data').eq('id',id).single();
+    if(data?.file_data)d.file_data=data.file_data;
+  }
   const decided=d.status==='Revisado'||d.status==='Rechazado';
   let previewHtml='';
   if(d.file_data&&/^data:/.test(d.file_data)){
@@ -1879,7 +1924,6 @@ function openDoc(id){
     ${decided?'':`<div style="margin-top:12px"><div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px">Nota para el miembro (opcional)</div><textarea id="docNota" rows="2" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 12px;font-family:var(--b);font-size:12px;outline:none;resize:vertical" placeholder="Ej. Documento aprobado / Necesitamos mayor resolución"></textarea></div>`}`;
   document.getElementById('docRejectBtn').style.display=decided?'none':'';
   document.getElementById('docReviewBtn').style.display=decided?'none':'';
-  openModal('modalDocAdmin');
 }
 async function decideDoc(decision){
   const d=_DOCS.find(x=>x.id===currentDocAdminId);if(!d)return;
