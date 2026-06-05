@@ -1,11 +1,23 @@
-// api/notify-applicant.js
-// Endpoint público (sin JWT) para enviar el correo de confirmación al aplicante.
-// No es un relay abierto: la plantilla es fija (server-side) y los datos
-// vienen de la DB, no del cliente. El cliente solo envía el application_id.
-// La solicitud debe existir en la tabla `applications` y tener menos de 10 min de antigüedad.
-
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+
+// Rate limiting en memoria — calibrado para ≤100 miembros
+// 3 requests por IP cada 10 minutos
+const _rl = new Map();
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const window = 10 * 60 * 1000;
+  const max = 3;
+  const entry = _rl.get(ip) || { count: 0, reset: now + window };
+  if (now > entry.reset) { entry.count = 0; entry.reset = now + window; }
+  entry.count++;
+  _rl.set(ip, entry);
+  if (_rl.size > 500) { // limpiar si crece demasiado
+    const old = now - window;
+    for (const [k, v] of _rl) { if (v.reset < old) _rl.delete(k); }
+  }
+  return entry.count <= max;
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -31,6 +43,12 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Rate limit por IP — 3 req / 10 min
+  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta en 10 minutos.' });
+  }
 
   const { application_id } = req.body;
   if (!application_id || typeof application_id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(application_id)) {

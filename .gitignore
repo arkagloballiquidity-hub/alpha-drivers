@@ -1,5 +1,34 @@
+# Sistema
 .DS_Store
 imagenes/.DS_Store
+
+# Entorno
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+
+# Dependencias
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build / Deploy
+.vercel
+
+# Claude Code
+.claude/settings.local.json
+
+# Archivos de trabajo (no van al repo)
+gen_pdf.py
+gen_pdf_v2.py
+presentacion.html
+202605191137.mp4
 202605190813.mp4
 imagenes/hero-video-original.mp4
-.claude/settings.local.json
+
+# Backups internos
+index.backup-*.html
