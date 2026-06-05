@@ -1,5 +1,7 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+import { initSentry, captureException } from './_sentry.js';
+initSentry();
 
 // Rate limiting en memoria — calibrado para ≤100 miembros
 // 3 requests por IP cada 10 minutos
@@ -90,7 +92,7 @@ export default async function handler(req, res) {
     html,
   });
 
-  if (mailErr) return res.status(400).json({ error: mailErr.message || 'Error enviando correo' });
+  if (mailErr) { captureException(new Error(mailErr.message || 'Resend error'), { application_id }); return res.status(400).json({ error: mailErr.message || 'Error enviando correo' }); }
 
   // Marcar código de invitación como usado (server-side — sin acceso anon a invite_codes)
   if (invite_id) {

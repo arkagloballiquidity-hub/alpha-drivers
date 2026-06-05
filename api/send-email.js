@@ -1,5 +1,7 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+import { initSentry, captureException } from './_sentry.js';
+initSentry();
 
 // Rate limiting en memoria — 20 emails por usuario autenticado por hora
 const _rl = new Map();
@@ -64,6 +66,6 @@ export default async function handler(req, res) {
     html,
   });
 
-  if (error) { console.error('Resend error:', error); return res.status(400).json({ error: 'Error al enviar correo' }); }
+  if (error) { captureException(new Error(error.message || 'Resend error'), { to, subject }); return res.status(400).json({ error: 'Error al enviar correo' }); }
   return res.status(200).json({ data });
 }

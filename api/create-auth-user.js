@@ -3,6 +3,8 @@
 // Solo accesible para admins con sesión válida de Supabase
 
 import { createClient } from '@supabase/supabase-js';
+import { initSentry, captureException } from './_sentry.js';
+initSentry();
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,

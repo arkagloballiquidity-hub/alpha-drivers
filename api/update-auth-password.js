@@ -3,6 +3,8 @@
 // Solo accesible para admins autenticados (verifica app_metadata.role, no user_metadata)
 
 import { createClient } from '@supabase/supabase-js';
+import { initSentry, captureException } from './_sentry.js';
+initSentry();
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,

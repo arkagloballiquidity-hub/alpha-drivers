@@ -1,4 +1,6 @@
 // api/send-invite.js
+import { initSentry, captureException } from './_sentry.js';
+initSentry();
 // Endpoint autenticado para que miembros envíen correos de invitación.
 // El miembro envía invite_code_id; la plantilla y los datos se construyen server-side.
 // No es relay abierto: el HTML nunca viene del cliente.

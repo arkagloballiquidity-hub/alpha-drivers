@@ -373,6 +373,18 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 </style>
+<script
+  src="https://js.sentry-cdn.com/e07b082273bfb342bb28f68e98b8f296.min.js"
+  crossorigin="anonymous"
+></script>
+<script>
+  Sentry.onLoad(function() {
+    Sentry.init({
+      environment: location.hostname === 'alphadrivers.mx' ? 'production' : 'development',
+      tracesSampleRate: 0.2,
+    });
+  });
+</script>
 </head>
 <body>
 
