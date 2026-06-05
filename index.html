@@ -413,9 +413,6 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   <a href="#" class="nl">
     <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="width:150px;height:auto;object-fit:contain;vertical-align:middle"/>
   </a>
-  <ul class="nls">
-    <li><a href="#" onclick="openInviteGate(event)">Apply</a></li>
-  </ul>
   <div class="nav-right">
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">ES</button>
     <a href="/login" class="bk-btn bk-member" title="Member Portal">
@@ -1006,7 +1003,7 @@ window.addEventListener('DOMContentLoaded', () => {
           start: 'top top',
           end: '+=1500%',
           pin: true,
-          scrub: 0.7,
+          scrub: 1.2,
           anticipatePin: 1,
           onUpdate: self => {
             const prog = self.progress;
@@ -1072,7 +1069,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (ctrEl) {
         const ctrObj = { val: 0 };
         tl.to(ctrObj, {
-          val: 100, ease: 'power2.out', duration: 0.06,
+          val: 50, ease: 'power2.out', duration: 0.06,
           onUpdate: () => { ctrEl.textContent = Math.floor(ctrObj.val); }
         }, 0.86);
       }
