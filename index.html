@@ -964,16 +964,17 @@ window.addEventListener('DOMContentLoaded', () => {
     // 16.5–18.5s → Logo en puerta, branding premium     → ALPHA BLACK
     // 18.5–20.5s → Convoy en túnel                      → LIMITED
     // 20.5–22s   → Porsche a velocidad en ciudad        → CTA
+    // Scroll total 1500% — cada panel tiene ~10% de hold para que se pueda leer
     const PC = [
       { id: 'p-hero',        inAt: 0.00, outAt: 0.10, dot: 0 },
-      { id: 'p-manifesto',   inAt: 0.12, outAt: 0.23, dot: 1 },
-      { id: 'p-club',        inAt: 0.25, outAt: 0.37, dot: 2 },
-      { id: 'p-benefits',    inAt: 0.39, outAt: 0.51, dot: 3 },
-      { id: 'p-experiences', inAt: 0.53, outAt: 0.63, dot: 4 },
-      { id: 'p-tiers',       inAt: 0.65, outAt: 0.74, dot: 5 },
-      { id: 'p-tiers-black', inAt: 0.76, outAt: 0.84, dot: 6 },
-      { id: 'p-limited',     inAt: 0.85, outAt: 0.92, dot: 7 },
-      { id: 'p-cta',         inAt: 0.93, outAt: 1.00, dot: 8 },
+      { id: 'p-manifesto',   inAt: 0.13, outAt: 0.23, dot: 1 },
+      { id: 'p-club',        inAt: 0.26, outAt: 0.36, dot: 2 },
+      { id: 'p-benefits',    inAt: 0.39, outAt: 0.49, dot: 3 },
+      { id: 'p-experiences', inAt: 0.52, outAt: 0.62, dot: 4 },
+      { id: 'p-tiers',       inAt: 0.64, outAt: 0.73, dot: 5 },
+      { id: 'p-tiers-black', inAt: 0.75, outAt: 0.84, dot: 6 },
+      { id: 'p-limited',     inAt: 0.86, outAt: 0.94, dot: 7 },
+      { id: 'p-cta',         inAt: 0.96, outAt: 1.00, dot: 8 },
     ];
 
     const dots = document.querySelectorAll('.si-dot');
@@ -988,7 +989,7 @@ window.addEventListener('DOMContentLoaded', () => {
         scrollTrigger: {
           trigger: '#scrub',
           start: 'top top',
-          end: '+=900%',
+          end: '+=1500%',
           pin: true,
           scrub: 0.7,
           anticipatePin: 1,
@@ -1015,9 +1016,9 @@ window.addEventListener('DOMContentLoaded', () => {
       tl.to(vid, { currentTime: dur, ease: 'none', duration: 1 }, 0);
 
       // Overlay subtly adapts — stays lighter so the video stays visible
-      tl.to('#vov', { background: 'rgba(0,0,0,0.42)', ease: 'none', duration: 0.1 }, 0.14);
+      tl.to('#vov', { background: 'rgba(0,0,0,0.42)', ease: 'none', duration: 0.08 }, 0.13);
       tl.to('#vov', { background: 'rgba(0,0,0,0.32)', ease: 'none', duration: 0.06 }, 0.52);
-      tl.to('#vov', { background: 'rgba(0,0,0,0.48)', ease: 'none', duration: 0.06 }, 0.89);
+      tl.to('#vov', { background: 'rgba(0,0,0,0.48)', ease: 'none', duration: 0.06 }, 0.86);
 
       // PANELS — each fades in, holds, fades out
       const TR = 0.025; // transition radius (how fast in/out)
@@ -1039,14 +1040,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // Limited counter animates as its panel enters
+      // Limited counter — anima durante todo el panel (0.86–0.94) para llegar a 50
       const ctrEl = document.getElementById('scrubCtr');
       if (ctrEl) {
         const ctrObj = { val: 0 };
         tl.to(ctrObj, {
-          val: 50, ease: 'none', duration: 0.05,
+          val: 50, ease: 'power2.out', duration: 0.06,
           onUpdate: () => { ctrEl.textContent = Math.floor(ctrObj.val); }
-        }, 0.89);
+        }, 0.86);
       }
     };
 
