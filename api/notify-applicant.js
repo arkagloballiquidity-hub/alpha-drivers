@@ -50,9 +50,12 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta en 10 minutos.' });
   }
 
-  const { application_id } = req.body;
+  const { application_id, invite_id } = req.body;
   if (!application_id || typeof application_id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(application_id)) {
     return res.status(400).json({ error: 'application_id inválido' });
+  }
+  if (invite_id !== undefined && (typeof invite_id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(invite_id))) {
+    return res.status(400).json({ error: 'invite_id inválido' });
   }
 
   // Leer la aplicación desde la DB (datos vienen del servidor, no del cliente)
@@ -88,5 +91,15 @@ export default async function handler(req, res) {
   });
 
   if (mailErr) return res.status(400).json({ error: mailErr.message || 'Error enviando correo' });
+
+  // Marcar código de invitación como usado (server-side — sin acceso anon a invite_codes)
+  if (invite_id) {
+    await supabaseAdmin
+      .from('invite_codes')
+      .update({ used: true, used_by: app.email })
+      .eq('id', invite_id)
+      .eq('used', false);
+  }
+
   return res.status(200).json({ sent: true });
 }

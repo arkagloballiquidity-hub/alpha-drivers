@@ -931,7 +931,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     /* --- HERO STAT COUNTERS (on load) --- */
     const statsData = [
-      { el: document.getElementById('hStat1'), target: 50, pad: 2 },
+      { el: document.getElementById('hStat1'), target: 100, pad: 3 },
       { el: document.getElementById('hStat2'), target: 10,  pad: 2 },
       { el: document.getElementById('hStat3'), target: 4,   pad: 2 },
     ];
@@ -1045,7 +1045,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (ctrEl) {
         const ctrObj = { val: 0 };
         tl.to(ctrObj, {
-          val: 50, ease: 'power2.out', duration: 0.06,
+          val: 100, ease: 'power2.out', duration: 0.06,
           onUpdate: () => { ctrEl.textContent = Math.floor(ctrObj.val); }
         }, 0.86);
       }
@@ -1117,11 +1117,8 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         if (!error) {
-          // Mark invite code as used
-          if (_inviteValidated?.id) {
-            await SB.from('invite_codes').update({ used: true, used_by: email }).eq('id', _inviteValidated.id);
-            _inviteValidated = null;
-          }
+          const inviteId = _inviteValidated?.invite_id || null;
+          _inviteValidated = null;
           applyForm.reset();
           applyForm.style.display = 'none';
           document.getElementById('formSuccess').style.display = 'block';
@@ -1129,11 +1126,11 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('successTitle').textContent = 'Application Received';
             document.getElementById('successBody').textContent = 'We are reviewing your application. We will get back to you at the email you provided.';
           }
-          // Enviar correo de confirmación via endpoint dedicado (datos vienen de la DB, no del cliente)
+          // Confirmar solicitud y marcar código como usado — todo server-side
           fetch('/api/notify-applicant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ application_id: appId })
+            body: JSON.stringify({ application_id: appId, invite_id: inviteId })
           }).catch(() => {});
         } else {
           btn.disabled = false;
@@ -1156,7 +1153,7 @@ function exploreClub(e) {
 }
 
 /* ── INVITE CODE GATE ────────────────────────────────────────── */
-let _inviteValidated = null; // stores the valid code once verified
+let _inviteValidated = null; // stores { invite_id } once server-validated
 
 function openInviteGate(e) {
   if (e) e.preventDefault();
@@ -1180,22 +1177,36 @@ function closeInviteGate() {
 
 async function validateInviteCode() {
   const code = document.getElementById('inviteCode').value.trim().toUpperCase();
-  const errEl = document.getElementById('inviteErr');
   const btn = document.getElementById('inviteBtn');
   const lang = typeof currentLang !== 'undefined' ? currentLang : 'es';
   if (!code) { showInviteErr(lang === 'en' ? 'Enter your invite code' : 'Ingresa tu código'); return; }
   btn.textContent = lang === 'en' ? 'Validating…' : 'Validando…';
   btn.disabled = true;
-  const { data, error } = await SB.from('invite_codes').select('*').eq('code', code).eq('used', false).maybeSingle();
-  btn.textContent = lang === 'en' ? 'Continue' : 'Continuar';
-  btn.disabled = false;
-  if (!data || error) {
-    showInviteErr(lang === 'en' ? 'Invalid or already used code.' : 'Código inválido o ya utilizado.');
-    return;
+  try {
+    const res = await fetch('/api/validate-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const json = await res.json();
+    btn.textContent = lang === 'en' ? 'Continue' : 'Continuar';
+    btn.disabled = false;
+    if (res.status === 429) {
+      showInviteErr(lang === 'en' ? 'Too many attempts. Try again in 15 minutes.' : 'Demasiados intentos. Intenta en 15 minutos.');
+      return;
+    }
+    if (!json.valid) {
+      showInviteErr(lang === 'en' ? 'Invalid or already used code.' : 'Código inválido o ya utilizado.');
+      return;
+    }
+    _inviteValidated = { invite_id: json.invite_id };
+    closeInviteGate();
+    scrollToForm();
+  } catch {
+    btn.textContent = lang === 'en' ? 'Continue' : 'Continuar';
+    btn.disabled = false;
+    showInviteErr(lang === 'en' ? 'Connection error. Please try again.' : 'Error de conexión. Intenta de nuevo.');
   }
-  _inviteValidated = data;
-  closeInviteGate();
-  scrollToForm();
 }
 
 function showInviteErr(msg) {
