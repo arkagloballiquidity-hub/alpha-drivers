@@ -74,7 +74,7 @@ body::after{
 /* ====================== NAV ====================== */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:500;
-  padding:12px 36px;display:flex;align-items:center;justify-content:space-between;
+  height:58px;padding:0 36px;display:flex;align-items:center;justify-content:space-between;
   transition:background .5s var(--ease)
 }
 nav.s{background:rgba(6,6,6,.62);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
@@ -325,9 +325,9 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
 .mob-apply{display:none}
 @media(max-width:768px){
   /* Nav */
-  nav{padding:6px 16px;min-height:unset}
+  nav{height:50px;padding:0 16px}
   .nl{display:flex;align-items:center}
-  .nl img{width:88px!important;height:auto;display:block}
+  .nl img{width:88px!important;height:auto;max-height:28px!important;object-fit:contain;display:block}
   .nls{display:none}
   .nb{font-size:9px;padding:8px 12px;letter-spacing:.12em}
   .bk-label{display:none}
@@ -418,7 +418,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
 <!-- NAV -->
 <nav id="nav">
   <a href="#" class="nl">
-    <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="width:150px;height:auto;object-fit:contain;vertical-align:middle"/>
+    <img src="imagenes/logo-ad.png" alt="Alpha Drivers" style="width:150px;height:auto;max-height:36px;object-fit:contain;display:block"/>
   </a>
   <div class="nav-right">
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">ES</button>
@@ -504,7 +504,7 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
         <h2 class="sp-h2" data-i18n-html="club.h2">Private<br>by Design</h2>
         <p class="sp-sub" data-i18n="club.sub">A private community for those who live and breathe the automotive world — exclusive experiences, elite networking and benefits designed to elevate every moment.</p>
       </div>
-      <div class="sp-cards" style="grid-template-columns:1fr 1fr">
+      <div class="sp-cards">
         <div class="sp-card"><div class="sp-cn">01</div><h3 class="sp-ctit" data-i18n="club.c1.title">Exclusive Tours</h3><p class="sp-cbod" data-i18n="club.c1.body">Access to unique experiences and routes across Mexico and the world.</p></div>
         <div class="sp-card"><div class="sp-cn">02</div><h3 class="sp-ctit" data-i18n="club.c2.title">Private Events</h3><p class="sp-cbod" data-i18n="club.c2.body">Gatherings, launches and experiences reserved exclusively for members.</p></div>
         <div class="sp-card"><div class="sp-cn">03</div><h3 class="sp-ctit" data-i18n="club.c3.title">Elite Networking</h3><p class="sp-cbod" data-i18n="club.c3.body">Connect with entrepreneurs, investors and leaders passionate about cars.</p></div>
