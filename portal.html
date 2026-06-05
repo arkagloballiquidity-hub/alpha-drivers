@@ -1113,6 +1113,7 @@ async function saveProfile(){
   const avatarFile=document.getElementById('avatarFile').files[0];
   let updates={name,phone,city,vehicle,bio};
   if(avatarFile){
+    if(!await validateMagicBytes(avatarFile)){toast('Imagen inválida — el contenido no coincide con el tipo declarado');return;}
     const b64=await fileToBase64(avatarFile);
     updates.avatar_data=b64;
   }
@@ -1211,6 +1212,22 @@ function onPagoFileSelect(input){
   document.getElementById('pagoFileSel').textContent=f?f.name+' ('+Math.round(f.size/1024)+' KB)':'';
 }
 
+async function validateMagicBytes(file){
+  return new Promise(resolve=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const b=new Uint8Array(e.target.result);
+      const hex=Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+      const ok=
+        hex.startsWith('ffd8ff') ||            // JPEG
+        hex.startsWith('89504e47') ||           // PNG
+        hex.startsWith('52494646') ||           // WebP (RIFF)
+        hex.startsWith('25504446');             // PDF
+      resolve(ok);
+    };
+    r.readAsArrayBuffer(file.slice(0,8));
+  });
+}
 async function fileToBase64(file){
   return new Promise((resolve,reject)=>{
     const r=new FileReader();
@@ -1228,6 +1245,7 @@ async function uploadDocument(){
   if(file.size>5*1024*1024){toast('El archivo supera 5 MB — elige uno más pequeño');return;}
   const ALLOWED_TYPES=['application/pdf','image/jpeg','image/png','image/webp'];
   if(!ALLOWED_TYPES.includes(file.type)){toast('Tipo de archivo no permitido — usa PDF, JPG o PNG');return;}
+  if(!await validateMagicBytes(file)){toast('Archivo inválido — el contenido no coincide con el tipo declarado');return;}
   btn.disabled=true;btn.textContent='Subiendo...';
   const m=getMember();
   try{
@@ -1259,6 +1277,7 @@ async function uploadPaymentProof(){
   if(file.size>5*1024*1024){toast('El archivo supera 5 MB — elige uno más pequeño');return;}
   const ALLOWED_TYPES=['application/pdf','image/jpeg','image/png','image/webp'];
   if(!ALLOWED_TYPES.includes(file.type)){toast('Tipo de archivo no permitido — usa PDF, JPG o PNG');return;}
+  if(!await validateMagicBytes(file)){toast('Archivo inválido — el contenido no coincide con el tipo declarado');return;}
   btn.disabled=true;btn.textContent='Enviando...';
   const m=getMember();
   try{

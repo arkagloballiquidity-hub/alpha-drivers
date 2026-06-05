@@ -1263,6 +1263,17 @@ function renderMemberPhotos(memberId){
       <button data-pid="${_esc(p.id)}" data-mid="${_esc(memberId)}" onclick="deleteEventPhoto(this.dataset.pid,this.dataset.mid)" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--red);border:none;color:#fff;font-size:10px;cursor:pointer;line-height:16px;text-align:center;border-radius:50%">×</button>
     </div>`).join('')+`</div>`;
 }
+async function _validateMagicBytes(file){
+  return new Promise(resolve=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const b=new Uint8Array(e.target.result);
+      const hex=Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+      resolve(hex.startsWith('ffd8ff')||hex.startsWith('89504e47')||hex.startsWith('52494646')||hex.startsWith('47494638'));
+    };
+    r.readAsArrayBuffer(file.slice(0,8));
+  });
+}
 async function uploadEventPhoto(memberId,memberName){
   const file=document.getElementById('mdPhotoFile').files[0];
   const event_name=document.getElementById('mdPhotoEvent').value.trim();
@@ -1270,6 +1281,7 @@ async function uploadEventPhoto(memberId,memberName){
   if(!file){toast('Selecciona una imagen');return;}
   if(file.size>5*1024*1024){toast('La imagen debe ser menor a 5 MB');return;}
   if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){toast('Solo se permiten imágenes JPG, PNG, WebP o GIF');return;}
+  if(!await _validateMagicBytes(file)){toast('Imagen inválida — el contenido no coincide con el tipo declarado');return;}
   const reader=new FileReader();
   reader.onload=async function(e){
     const file_data=e.target.result;
