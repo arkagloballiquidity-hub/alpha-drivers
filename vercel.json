@@ -1,6 +1,7 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "analytics": { "id": "alphadrivers" },
   "headers": [
     {
       "source": "/(.*)",
