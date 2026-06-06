@@ -693,7 +693,7 @@ const SB=supabase.createClient(
   _AD_ROLE = role;
   // Refrescar localStorage con datos del JWT real
   const display = session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'admin';
-  localStorage.setItem('ad_role', role);
+  // ad_role no se guarda — el JWT es la fuente de verdad
   localStorage.setItem('ad_user', display);
   document.getElementById('sbUser').textContent=(role==='concierge'?'Concierge: ':role==='staff'?'Staff: ':'Admin: ')+display;
   // Mostrar badge de rol real
@@ -956,7 +956,7 @@ function refreshMobLabels(){
 const ADMIN_ONLY_VIEWS=['staff','config'];
 function showView(name,btn){
   // Bloquear vistas restringidas para roles no-admin
-  const currentRole=localStorage.getItem('ad_role')||'';
+  const currentRole=_AD_ROLE||'';
   if(ADMIN_ONLY_VIEWS.includes(name)&&currentRole!=='admin'){toast('Acceso restringido a administradores');return;}
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.sb-link').forEach(b=>b.classList.remove('active'));

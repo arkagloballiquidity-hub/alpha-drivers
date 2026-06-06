@@ -26,6 +26,7 @@ npm-debug.log*
 gen_pdf.py
 gen_pdf_v2.py
 presentacion.html
+serve.py
 202605191137.mp4
 202605190813.mp4
 imagenes/hero-video-original.mp4

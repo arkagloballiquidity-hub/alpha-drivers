@@ -11,6 +11,22 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Rate limiting — 10 creaciones por IP por hora
+const _rl = new Map();
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000;
+  const entry = _rl.get(ip) || { count: 0, reset: now + windowMs };
+  if (now > entry.reset) { entry.count = 0; entry.reset = now + windowMs; }
+  entry.count++;
+  _rl.set(ip, entry);
+  if (_rl.size > 500) {
+    const old = now - windowMs;
+    for (const [k, v] of _rl) { if (v.reset < old) _rl.delete(k); }
+  }
+  return entry.count <= 10;
+}
+
 const ALLOWED_ORIGINS = ['https://alphadrivers.mx'];
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
@@ -19,6 +35,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta en una hora.' });
+  }
 
   // Verificar que el llamador es un admin autenticado
   const authHeader = req.headers.authorization;
@@ -95,7 +116,7 @@ export default async function handler(req, res) {
       const found = existing?.users?.find(u => u.email === authEmail);
       if (found) return res.status(200).json({ user_id: found.id, existed: true });
     }
-    console.error('createUser error:', error.message);
+    captureException(new Error(error.message), { endpoint: 'create-auth-user', email: authEmail });
     return res.status(400).json({ error: 'No se pudo crear el usuario' });
   }
 

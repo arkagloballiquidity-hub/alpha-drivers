@@ -496,6 +496,13 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
 
+    <!-- MODAL FOTO -->
+    <div id="fotoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px" onclick="this.style.display='none'">
+      <img id="fotoModalImg" src="" alt="" style="max-width:90vw;max-height:80vh;object-fit:contain;display:block"/>
+      <div id="fotoModalCap" style="font-size:11px;letter-spacing:.15em;color:rgba(255,255,255,.45);text-transform:uppercase"></div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25)">Clic para cerrar</div>
+    </div>
+
     <div class="view" id="view-documentos">
       <div class="sec-hd">
         <div class="section-title" style="margin:0">Mis Documentos</div>
@@ -889,7 +896,7 @@ let _MEMBER_ID=null;
   _MEMBER_ID = mid;
   localStorage.setItem('ad_member_id', mid);
   const display = meta.display_name || session.user.email?.split('@')[0] || '';
-  localStorage.setItem('ad_role', 'member');
+  // ad_role no se guarda — el JWT es la fuente de verdad
   localStorage.setItem('ad_user', display);
 })();
 
@@ -914,7 +921,7 @@ async function loadAll(){
     SB.from('invite_codes').select('id,code,used,used_by,created_at,referred_name,referred_email').eq('referred_by',_MEMBER_ID).order('created_at',{ascending:false}),
     SB.from('config_required_docs').select('*').eq('activo',true).order('orden'),
     SB.from('config_general').select('*'),
-    SB.from('event_photos').select('id,event_name,title,file_data,file_type,uploaded_at').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
+    SB.from('event_photos').select('id,event_name,title,file_type,uploaded_at').eq('member_id',_MEMBER_ID).order('uploaded_at',{ascending:false}),
     SB.from('member_required_docs').select('*').eq('member_id',_MEMBER_ID).eq('activo',true).order('orden'),
     SB.from('config_benefit_types').select('*').eq('activo',true).order('orden'),
     SB.from('config_benefit_limits').select('*'),
@@ -1090,7 +1097,9 @@ function renderProfile(){
   if(bioEl)bioEl.value=m.bio||'';
   if(m.avatar_data){
     const av=document.getElementById('avatarPreview');
-    if(av)av.innerHTML=`<img src="${m.avatar_data}" style="width:80px;height:80px;object-fit:cover;border-radius:50%"/>`;
+    if(av && /^data:image\/(jpeg|png|webp|gif);base64,/.test(m.avatar_data)){
+      av.innerHTML=`<img src="${m.avatar_data}" style="width:80px;height:80px;object-fit:cover;border-radius:50%"/>`;
+    }
   }
 }
 function onAvatarSelect(input){
@@ -1125,15 +1134,25 @@ async function saveProfile(){
   toast('Perfil actualizado');
 }
 // ── FOTOS GALLERY ────────────────────────────────────────────
+async function openFoto(id){
+  const {data} = await SB.from('event_photos').select('file_data,title,event_name').eq('id',id).single();
+  if(!data?.file_data || !/^data:image\/(jpeg|png|webp|gif);base64,/.test(data.file_data)) return;
+  const m=document.getElementById('fotoModal');
+  if(!m) return;
+  const img=m.querySelector('#fotoModalImg');
+  const cap=m.querySelector('#fotoModalCap');
+  if(img) img.src=data.file_data;
+  if(cap) cap.textContent=[data.event_name,data.title].filter(Boolean).join(' · ');
+  m.style.display='flex';
+}
 function renderFotos(){
   const el=document.getElementById('fotosGallery');if(!el)return;
   if(!_myPhotos.length){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:48px;font-size:12px;grid-column:1/-1">Aún no hay fotos de eventos. Próximamente verás aquí las fotos de tus autos en cada evento.</div>';return;}
   el.innerHTML=_myPhotos.map(p=>{
-    const safeSrc=/^data:image\//.test(p.file_data||'')?p.file_data:'';
     const altTxt=_esc(p.title||p.event_name||'Foto');
-    return `<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.07);overflow:hidden">
-      <div style="aspect-ratio:4/3;overflow:hidden;background:#111">
-        ${safeSrc?`<img src="${safeSrc}" alt="${altTxt}" style="width:100%;height:100%;object-fit:cover"/>`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.2);font-size:11px">Sin imagen</div>'}
+    return `<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.07);overflow:hidden;cursor:pointer" onclick="openFoto('${_esc(p.id)}')">
+      <div style="aspect-ratio:4/3;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center">
+        <div style="color:rgba(255,255,255,.2);font-size:11px;letter-spacing:.05em">Clic para ver</div>
       </div>
       <div style="padding:12px 14px">
         ${p.event_name?`<div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px">${_esc(p.event_name)}</div>`:''}

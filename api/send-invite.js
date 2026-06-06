@@ -1,12 +1,24 @@
 // api/send-invite.js
 import { initSentry, captureException } from './_sentry.js';
 initSentry();
-// Endpoint autenticado para que miembros envíen correos de invitación.
-// El miembro envía invite_code_id; la plantilla y los datos se construyen server-side.
-// No es relay abierto: el HTML nunca viene del cliente.
 
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+
+// Rate limiting — 5 invitaciones por miembro por hora
+const _rl = new Map();
+function checkRateLimit(key, max, windowMs) {
+  const now = Date.now();
+  const entry = _rl.get(key) || { count: 0, reset: now + windowMs };
+  if (now > entry.reset) { entry.count = 0; entry.reset = now + windowMs; }
+  entry.count++;
+  _rl.set(key, entry);
+  if (_rl.size > 1000) {
+    const old = now - windowMs;
+    for (const [k, v] of _rl) { if (v.reset < old) _rl.delete(k); }
+  }
+  return entry.count <= max;
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -46,6 +58,12 @@ export default async function handler(req, res) {
   const callerRole = user.app_metadata?.role;
   if (!['member', 'admin', 'concierge', 'staff'].includes(callerRole)) {
     return res.status(403).json({ error: 'Acceso denegado' });
+  }
+
+  // Rate limit por member_id — 5 invitaciones por hora
+  const memberId = user.app_metadata?.member_id || user.id;
+  if (!checkRateLimit(memberId, 5, 60 * 60 * 1000)) {
+    return res.status(429).json({ error: 'Límite alcanzado. Máximo 5 invitaciones por hora.' });
   }
 
   const { invite_code_id } = req.body;
@@ -104,6 +122,6 @@ export default async function handler(req, res) {
     html,
   });
 
-  if (mailErr) return res.status(400).json({ error: 'Error enviando correo' });
+  if (mailErr) { captureException(new Error(mailErr.message || 'Resend error'), { endpoint: 'send-invite', invite_code_id }); return res.status(400).json({ error: 'Error enviando correo' }); }
   return res.status(200).json({ sent: true });
 }

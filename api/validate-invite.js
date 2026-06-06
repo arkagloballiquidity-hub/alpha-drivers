@@ -51,6 +51,7 @@ export default async function handler(req, res) {
     .eq('used', false)
     .maybeSingle();
 
+  if (error) { captureException(new Error(error.message), { endpoint: 'validate-invite' }); }
   if (error || !data) {
     return res.status(200).json({ valid: false });
   }
