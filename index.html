@@ -16,10 +16,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 /* ====================== BASE ====================== */
 :root{
@@ -404,7 +404,6 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 </style>
-<script defer src="/_vercel/insights/script.js"></script>
 <script
   src="https://js.sentry-cdn.com/e07b082273bfb342bb28f68e98b8f296.min.js"
   crossorigin="anonymous"
@@ -733,10 +732,17 @@ footer{background:#000;border-top:1px solid var(--gline);padding:80px 52px 48px}
    Todo el contenido sincronizado frame-por-frame con el video
    ============================================================ */
 
-const SB = supabase.createClient(
-  'https://fggchwkbvelqiofkojqn.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
-);
+// lazy: the supabase CDN script is deferred, so the client can't be created at parse time
+let SB = null;
+function getSB() {
+  if (!SB && typeof supabase !== 'undefined') {
+    SB = supabase.createClient(
+      'https://fggchwkbvelqiofkojqn.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ2Nod2tidmVscWlvZmtvanFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDUzMDksImV4cCI6MjA5NDc4MTMwOX0.4MPL3jxAnyaF4duWECKZvAsHm0hTG3vdWIe62gWyuq8'
+    );
+  }
+  return SB;
+}
 
 /* ============================================================
    I18N — Bilingual EN / ES
@@ -902,20 +908,41 @@ function toggleLang() {
   applyLang(currentLang === 'en' ? 'es' : 'en');
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+(() => {
 
   /* --- LOADER --- */
   const ldr = document.getElementById('ldr');
   const ldrFill = document.getElementById('ldrFill');
   const ldrPct = document.getElementById('ldrPct');
   let p = 0;
+  let domReady = document.readyState !== 'loading';
+  let started = false;
+  window.addEventListener('DOMContentLoaded', () => { domReady = true; });
+
+  function finishLoader() {
+    if (started) return;
+    started = true;
+    clearInterval(ldrInt);
+    ldrFill.style.width = '100%';
+    ldrPct.textContent = '100%';
+    ldr.classList.add('out');
+    try { initPage(); } catch (err) { console.error('initPage failed:', err); }
+  }
+
+  const libsReady = () =>
+    typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined' &&
+    typeof Lenis !== 'undefined' && typeof supabase !== 'undefined';
+
   const ldrInt = setInterval(() => {
-    p += Math.random() * 16 + 5;
-    if (p >= 100) { p = 100; clearInterval(ldrInt); }
+    // hold at 90% until the deferred CDN scripts have executed
+    p = Math.min(p + Math.random() * 16 + 5, (domReady && libsReady()) ? 100 : 90);
     ldrFill.style.width = p + '%';
     ldrPct.textContent = Math.floor(p) + '%';
-    if (p >= 100) setTimeout(() => { ldr.classList.add('out'); initPage(); }, 350);
+    if (p >= 100) { clearInterval(ldrInt); setTimeout(finishLoader, 350); }
   }, 55);
+
+  // failsafe: never leave the loader stuck, even if a CDN is blocked or hangs
+  setTimeout(finishLoader, 8000);
 
   /* --- CUSTOM CURSOR --- */
   const cur = document.getElementById('cur');
@@ -937,6 +964,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const isMobile = window.matchMedia('(max-width:768px)').matches;
 
     /* --- GSAP + ScrollTrigger --- */
+    // animations are best-effort: if a CDN failed, skip them but keep the page usable
+    try {
     gsap.registerPlugin(ScrollTrigger);
 
     /* --- LENIS smooth scroll (desktop only — mobile uses native scroll) --- */
@@ -1141,6 +1170,7 @@ window.addEventListener('DOMContentLoaded', () => {
       { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: 'power3.out',
         scrollTrigger: { trigger: 'footer', start: 'top 85%' } }
     );
+    } catch (err) { console.error('animations disabled:', err); }
 
     /* --- FORM SUBMIT → Supabase --- */
     const applyForm = document.getElementById('applyForm');
@@ -1162,7 +1192,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const appId = 'a' + Date.now();
         const today = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
-        const { error } = await SB.from('applications').insert({
+        const { error } = await getSB().from('applications').insert({
           id: appId,
           name, email, city, vehicle, msg,
           date: today,
@@ -1194,7 +1224,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   } // end initPage
 
-}); // end DOMContentLoaded
+})(); // end init IIFE
 
 /* ── EXPLORE THE CLUB ────────────────────────────────────────── */
 function exploreClub(e) {
