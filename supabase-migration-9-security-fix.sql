@@ -63,6 +63,13 @@ CREATE TRIGGER protect_member_fields
   FOR EACH ROW EXECUTE FUNCTION _protect_member_fields();
 
 
+-- ── 3. Eliminar columna legacy de contraseña en texto plano ──
+-- El login ya usa Supabase Auth (contraseñas hasheadas). La columna
+-- member_users.password quedó sin uso; migration-auth.sql ya dejaba
+-- esta acción documentada (línea 13, comentada). Es seguro eliminarla.
+ALTER TABLE member_users DROP COLUMN IF EXISTS password;
+
+
 -- ══════════════════════════════════════════════════════════════
 -- VERIFICACIÓN — ejecutar y confirmar que NO aparece ninguna
 -- política con qual = true ni el rol {public} en estas tablas.
