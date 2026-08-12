@@ -1,4 +1,4 @@
-const CACHE = 'ad-v1';
+const CACHE = 'ad-v2';
 const PRECACHE = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/imagenes/logo-ad.png'];
 
 self.addEventListener('install', e => {
@@ -11,6 +11,9 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // never intercept cross-origin requests (CDN scripts, fonts): the SW's CSP
+  // connect-src blocks fetch() to those hosts, which broke every CDN load
+  if (!e.request.url.startsWith(self.location.origin)) return;
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
