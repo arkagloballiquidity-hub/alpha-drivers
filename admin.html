@@ -1138,7 +1138,7 @@ function openMember(id){
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Número de Miembro</div>
       <div style="display:flex;gap:10px;align-items:center">
-        <input type="text" id="mdNumero" value="${m.numero||m.id}" style="width:120px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:13px;font-weight:600;outline:none;letter-spacing:.1em"/>
+        <input type="text" id="mdNumero" value="${_esc(m.numero||m.id)}" style="width:120px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:13px;font-weight:600;outline:none;letter-spacing:.1em"/>
         <button class="btn-sm" data-id="${_esc(id)}" onclick="saveNumero(this.dataset.id)">Guardar</button>
       </div>
     </div>
@@ -1152,9 +1152,9 @@ function openMember(id){
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Inicio de Beneficios</div>
       <div style="display:flex;gap:10px;align-items:center">
-        <input type="date" id="mdBenStart" value="${m.benefits_start||''}" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
+        <input type="date" id="mdBenStart" value="${_esc(m.benefits_start||'')}" style="background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--b);font-size:12px;outline:none"/>
         <button class="btn-sm" data-id="${_esc(id)}" onclick="saveBenStart(this.dataset.id)">Guardar</button>
-        ${m.benefits_start?`<span style="font-size:10px;color:var(--green)">Activo desde ${m.benefits_start}</span>`:`<span style="font-size:10px;color:var(--amber)">Sin fecha asignada</span>`}
+        ${m.benefits_start?`<span style="font-size:10px;color:var(--green)">Activo desde ${_esc(m.benefits_start)}</span>`:`<span style="font-size:10px;color:var(--amber)">Sin fecha asignada</span>`}
       </div>
     </div>
     <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);padding:16px;margin-top:16px">

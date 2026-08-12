@@ -1,0 +1,12 @@
+# Database schema / RLS source — must never be served publicly
+*.sql
+
+# Confidential business documents
+*.docx
+*.pdf
+
+# Dev-only scripts and backups (also gitignored)
+gen_pdf.py
+gen_pdf_v2.py
+serve.py
+index.backup-*.html

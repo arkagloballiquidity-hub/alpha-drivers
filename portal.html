@@ -1097,8 +1097,12 @@ function renderProfile(){
   if(bioEl)bioEl.value=m.bio||'';
   if(m.avatar_data){
     const av=document.getElementById('avatarPreview');
-    if(av && /^data:image\/(jpeg|png|webp|gif);base64,/.test(m.avatar_data)){
-      av.innerHTML=`<img src="${m.avatar_data}" style="width:80px;height:80px;object-fit:cover;border-radius:50%"/>`;
+    if(av && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(m.avatar_data)){
+      av.textContent='';
+      const img=document.createElement('img');
+      img.src=m.avatar_data;
+      img.style.cssText='width:80px;height:80px;object-fit:cover;border-radius:50%';
+      av.appendChild(img);
     }
   }
 }
