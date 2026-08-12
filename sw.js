@@ -1,5 +1,8 @@
-const CACHE = 'ad-v2';
-const PRECACHE = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/imagenes/logo-ad.png'];
+const CACHE = 'ad-v3';
+const PRECACHE = [
+  '/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/imagenes/logo-ad.png',
+  '/vendor/gsap.min.js', '/vendor/ScrollTrigger.min.js', '/vendor/lenis.min.js', '/vendor/supabase.min.js'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
