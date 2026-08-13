@@ -1,0 +1,38 @@
+name: Chequeo mensual de seguridad
+
+on:
+  schedule:
+    # 1° de cada mes, 09:00 America/Mexico_City (15:00 UTC)
+    - cron: '0 15 1 * *'
+  workflow_dispatch: {}   # también se puede correr a mano desde la pestaña Actions
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ejecutar chequeo de seguridad
+        shell: bash
+        run: |
+          set +e
+          bash scripts/security-check.sh | tee report.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          { echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+      - name: Abrir issue si hay regresión
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          body="$(cat report.txt 2>/dev/null || echo 'El chequeo falló antes de generar reporte.')"
+          gh issue create \
+            --title "⚠️ Regresión de seguridad detectada ($(date -u +%Y-%m-%d))" \
+            --body "$(printf 'El chequeo mensual de seguridad detectó un problema.\n\n```\n%s\n```\n\nRun: %s/%s/actions/runs/%s' "$body" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
