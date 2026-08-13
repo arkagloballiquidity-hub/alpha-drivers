@@ -900,6 +900,9 @@ function statusClass(s){
 }
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
 function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Member-controlled file_data must be a strict image/pdf data-URI before it
+// touches an HTML attribute — blocks attribute-breakout XSS in previews.
+function _safeDataUri(s){return (typeof s==='string' && /^data:(image\/(png|jpe?g|webp|gif)|application\/pdf);base64,[A-Za-z0-9+/=]+$/.test(s))?s:'';}
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
@@ -1859,11 +1862,12 @@ async function openPago(id){
     if(data?.file_data)p.file_data=data.file_data;
   }
   previewHtml='';
-  if(p.file_data&&/^data:/.test(p.file_data)){
+  const pSrc=_safeDataUri(p.file_data);
+  if(pSrc){
     if(p.file_type&&p.file_type.startsWith('image/')){
-      previewHtml=`<div style="margin-bottom:16px"><img src="${p.file_data}" style="max-width:100%;border:1px solid rgba(255,255,255,.1)" alt="${_esc(p.filename||'Comprobante')}"/></div>`;
+      previewHtml=`<div style="margin-bottom:16px"><img src="${pSrc}" style="max-width:100%;border:1px solid rgba(255,255,255,.1)" alt="${_esc(p.filename||'Comprobante')}"/></div>`;
     } else {
-      previewHtml=`<div style="margin-bottom:16px"><a href="${p.file_data}" download="${_esc(p.filename||'comprobante')}" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);text-decoration:none">↓ Descargar Archivo</a></div>`;
+      previewHtml=`<div style="margin-bottom:16px"><a href="${pSrc}" download="${_esc(p.filename||'comprobante')}" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);text-decoration:none">↓ Descargar Archivo</a></div>`;
     }
   }
   document.getElementById('pagoBody').innerHTML=`
@@ -1908,11 +1912,12 @@ async function openDoc(id){
   }
   const decided=d.status==='Revisado'||d.status==='Rechazado';
   let previewHtml='';
-  if(d.file_data&&/^data:/.test(d.file_data)){
+  const dSrc=_safeDataUri(d.file_data);
+  if(dSrc){
     if(d.file_type&&d.file_type.startsWith('image/')){
-      previewHtml=`<div style="margin-bottom:16px"><img src="${d.file_data}" style="max-width:100%;border:1px solid rgba(255,255,255,.1)" alt="${_esc(d.filename||'Documento')}"/></div>`;
+      previewHtml=`<div style="margin-bottom:16px"><img src="${dSrc}" style="max-width:100%;border:1px solid rgba(255,255,255,.1)" alt="${_esc(d.filename||'Documento')}"/></div>`;
     } else {
-      previewHtml=`<div style="margin-bottom:16px"><a href="${d.file_data}" download="${_esc(d.filename||'documento')}" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);text-decoration:none">↓ Descargar Archivo</a></div>`;
+      previewHtml=`<div style="margin-bottom:16px"><a href="${dSrc}" download="${_esc(d.filename||'documento')}" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);text-decoration:none">↓ Descargar Archivo</a></div>`;
     }
   }
   document.getElementById('docAdminBody').innerHTML=`

@@ -1171,10 +1171,11 @@ function renderDocs(){
   // Contract download banner
   const contractEl=document.getElementById('contractBanner');
   if(contractEl){
-    if(_cfgGeneral.contract_url){
+    const contractUrl=/^(https?:|data:)/.test(_cfgGeneral.contract_url||'')?_cfgGeneral.contract_url:'';
+    if(contractUrl){
       contractEl.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:20px">
         <div><div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:#fff;margin-bottom:3px">Contrato de Membresía</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Descarga, firma y sube el documento firmado</div></div>
-        <a href="${_cfgGeneral.contract_url}" download="${_cfgGeneral.contract_filename||'Contrato_Alpha_Drivers.pdf'}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#000;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;padding:10px 18px;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Descargar</a>
+        <a href="${_esc(contractUrl)}" download="${_esc(_cfgGeneral.contract_filename||'Contrato_Alpha_Drivers.pdf')}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#000;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;padding:10px 18px;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Descargar</a>
       </div>`;
     } else {
       contractEl.innerHTML='';
@@ -1193,8 +1194,8 @@ function renderDocs(){
           ${uploaded?'<svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
         </div>
         <div style="flex:1">
-          <div style="font-size:12px;color:#fff">${rd.name}</div>
-          ${rd.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${rd.descripcion}</div>`:''}
+          <div style="font-size:12px;color:#fff">${_esc(rd.name)}</div>
+          ${rd.descripcion?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">${_esc(rd.descripcion)}</div>`:''}
         </div>
         <span class="status ${uploaded?uploaded.status==='Revisado'?'st-active':'st-pending':'st-rejected'}" style="font-size:8px">${uploaded?uploaded.status:'Pendiente'}</span>
       </div>`;
@@ -1470,12 +1471,12 @@ function render(){
   // Ben resumen (panel)
   document.getElementById('benResumen').innerHTML=bens.map(b=>`
     <div class="ben-card">
-      <div class="ben-num">${b.num}</div>
-      <div class="ben-title">${b.title}</div>
-      <div class="ben-val">${b.val}</div>
-      <div class="ben-per">${b.unit}</div>
+      <div class="ben-num">${_esc(b.num)}</div>
+      <div class="ben-title">${_esc(b.title)}</div>
+      <div class="ben-val">${_esc(b.val)}</div>
+      <div class="ben-per">${_esc(b.unit)}</div>
       <div class="ben-bar-wrap"><div class="ben-bar" style="width:0%" data-pct="${locked?0:b.pct}"></div></div>
-      <div class="ben-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
+      <div class="ben-bar-lbl"><span>${_esc(b.lbl1)}</span><span>${_esc(b.lbl2)}</span></div>
       ${lockNote}
       <div class="ben-actions" style="margin-top:${locked?'8px':'auto'}">
         ${locked?'':'<button class="btn-solicitar" data-modal="'+b.modal+'"'+(b._btId?' data-bt="'+b._btId+'"':'')+' onclick="openBenModal(this.dataset.modal,this.dataset.bt||null)">Solicitar</button>'}
@@ -1486,13 +1487,13 @@ function render(){
   // Ben detalle (beneficios view)
   document.getElementById('benDetalle').innerHTML=bens.map(b=>`
     <div class="ben-detail-card">
-      <div class="bdc-num">${b.num} / ${String(bens.length).padStart(2,'0')}</div>
-      <div class="bdc-title">${b.title}</div>
-      <div class="bdc-desc">${b.desc}</div>
-      <div class="bdc-val">${b.val}</div>
-      <div class="bdc-unit">${b.unit}</div>
+      <div class="bdc-num">${_esc(b.num)} / ${String(bens.length).padStart(2,'0')}</div>
+      <div class="bdc-title">${_esc(b.title)}</div>
+      <div class="bdc-desc">${_esc(b.desc)}</div>
+      <div class="bdc-val">${_esc(b.val)}</div>
+      <div class="bdc-unit">${_esc(b.unit)}</div>
       <div class="bdc-bar-wrap"><div class="bdc-bar" style="width:0%" data-pct="${locked?0:b.pct}"></div></div>
-      <div class="bdc-bar-lbl"><span>${b.lbl1}</span><span>${b.lbl2}</span></div>
+      <div class="bdc-bar-lbl"><span>${_esc(b.lbl1)}</span><span>${_esc(b.lbl2)}</span></div>
       ${lockNote}
       <div class="bdc-actions" style="margin-top:${locked?'8px':'auto'}">
         ${locked?'':'<button class="btn-solicitar" onclick="openBenModal(\''+b.modal+'\''+(b._btId?',\''+b._btId+'\'':'')+')">Solicitar beneficio</button>'}
