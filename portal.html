@@ -898,6 +898,15 @@ let _MEMBER_ID=null;
   const display = meta.display_name || session.user.email?.split('@')[0] || '';
   // ad_role no se guarda — el JWT es la fuente de verdad
   localStorage.setItem('ad_user', display);
+  // Cargar datos SOLO tras confirmar sesión + member_id (evita el race con _MEMBER_ID null)
+  loadAll().then(()=>{
+    render();
+    setTimeout(showInstallBanner, 2500);
+  }).catch(err=>{
+    console.error('Error loading data:',err);
+    document.getElementById('memberName').textContent='Error de conexión';
+    document.getElementById('memberMeta').textContent='No se pudo cargar tu información. Intenta recargar la página.';
+  });
 })();
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────────
@@ -1628,7 +1637,7 @@ function openBenModal(modalId,btId){
   if(modalId==='modalRoadTour'){
     const tours=getRoadTours();
     const sel=document.getElementById('rtFechaSelect');
-    sel.innerHTML=tours.map(t=>`<option value="${t.id}">${t.fecha} — ${t.ruta} (${t.cupo-(t.inscritos||0)} lugares)</option>`).join('');
+    sel.innerHTML=tours.map(t=>`<option value="${_esc(t.id)}">${_esc(t.fecha)} — ${_esc(t.ruta)} (${t.cupo-(t.inscritos||0)} lugares)</option>`).join('');
     if(!tours.length) sel.innerHTML='<option>Sin fechas disponibles por el momento</option>';
     document.getElementById('rtNotas').value='';
   }
@@ -1649,7 +1658,7 @@ function openBenModal(modalId,btId){
   if(modalId==='modalServicio'){
     const socios=getSocios();
     const sel=document.getElementById('svSocio');
-    sel.innerHTML='<option value="">Selecciona un socio...</option>'+socios.map(s=>`<option value="${s.id}" data-lim="${s.limite}">${s.nombre} — ${s.categoria} (límite ${fmtMXN(s.limite)})</option>`).join('');
+    sel.innerHTML='<option value="">Selecciona un socio...</option>'+socios.map(s=>`<option value="${_esc(s.id)}" data-lim="${_esc(s.limite)}">${_esc(s.nombre)} — ${_esc(s.categoria)} (límite ${fmtMXN(s.limite)})</option>`).join('');
     const m=getMember();const lim=getLimites()[m.nivel||'Alpha ONE']||{servicio:50000};
     const usado=servicioUsado();const rest=Math.max(0,lim.servicio-usado);
     document.getElementById('svHint').textContent='Crédito restante: '+fmtMXN(rest)+' MXN';
@@ -1925,14 +1934,8 @@ window.addEventListener('appinstalled',()=>{
 });
 
 // ── INIT ──────────────────────────────────────────────────────
-loadAll().then(()=>{
-  render();
-  setTimeout(showInstallBanner, 2500);
-}).catch(err=>{
-  console.error('Error loading data:',err);
-  document.getElementById('memberName').textContent='Error de conexión';
-  document.getElementById('memberMeta').textContent='No se pudo cargar tu información. Intenta recargar la página.';
-});
+// loadAll() se dispara dentro del guard de sesión (arriba), solo tras
+// confirmar rol member + member_id — no antes.
 </script>
 </body>
 </html>

@@ -21,7 +21,7 @@ function escHtml(s) {
 }
 
 export default async function handler(req, res) {
-  const _ao = ['https://alphadrivers.mx'];
+  const _ao = ['https://www.alphadrivers.mx', 'https://alphadrivers.mx'];
   const _or = req.headers.origin || '';
   res.setHeader('Access-Control-Allow-Origin', _ao.includes(_or) ? _or : 'null');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // Rate limit por IP — 3 req / 10 min (contador compartido en Supabase)
-  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const ip = (req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
   if (!(await rateLimit(supabaseAdmin, 'notify-applicant:' + ip, 3, 10 * 60))) {
     return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta en 10 minutos.' });
   }
@@ -77,13 +77,24 @@ export default async function handler(req, res) {
 
   if (mailErr) { captureException(new Error(mailErr.message || 'Resend error'), { application_id }); return res.status(400).json({ error: mailErr.message || 'Error enviando correo' }); }
 
-  // Marcar código de invitación como usado (server-side — sin acceso anon a invite_codes)
+  // Marcar código de invitación como usado — solo si pertenece a esta solicitud
+  // (evita que un invite_id ajeno se queme al pasarlo desde el cliente)
   if (invite_id) {
-    await supabaseAdmin
+    const { data: inv } = await supabaseAdmin
       .from('invite_codes')
-      .update({ used: true, used_by: app.email })
+      .select('referred_email')
       .eq('id', invite_id)
-      .eq('used', false);
+      .eq('used', false)
+      .maybeSingle();
+    const appEmail = (app.email || '').trim().toLowerCase();
+    const belongs = inv && (!inv.referred_email || inv.referred_email.trim().toLowerCase() === appEmail);
+    if (belongs) {
+      await supabaseAdmin
+        .from('invite_codes')
+        .update({ used: true, used_by: app.email })
+        .eq('id', invite_id)
+        .eq('used', false);
+    }
   }
 
   return res.status(200).json({ sent: true });

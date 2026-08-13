@@ -1,20 +1,8 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import { initSentry, captureException } from './_sentry.js';
+import { rateLimit } from './_ratelimit.js';
 initSentry();
-
-// Rate limiting en memoria — 20 emails por usuario autenticado por hora
-const _rl = new Map();
-function checkRateLimit(userId) {
-  const now = Date.now();
-  const window = 60 * 60 * 1000;
-  const max = 20;
-  const entry = _rl.get(userId) || { count: 0, reset: now + window };
-  if (now > entry.reset) { entry.count = 0; entry.reset = now + window; }
-  entry.count++;
-  _rl.set(userId, entry);
-  return entry.count <= max;
-}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -23,7 +11,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ALLOWED_ORIGINS = ['https://alphadrivers.mx'];
+const ALLOWED_ORIGINS = ['https://www.alphadrivers.mx', 'https://alphadrivers.mx'];
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : 'null');
@@ -46,8 +34,8 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Acceso denegado' });
   }
 
-  // Rate limit por usuario — 20 emails/hora
-  if (!checkRateLimit(user.id)) {
+  // Rate limit por usuario — 20 emails/hora (contador compartido)
+  if (!(await rateLimit(supabaseAdmin, 'send-email:' + user.id, 20, 60 * 60))) {
     return res.status(429).json({ error: 'Límite de envíos alcanzado. Intenta en una hora.' });
   }
 

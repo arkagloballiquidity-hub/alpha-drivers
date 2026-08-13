@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { initSentry, captureException } from './_sentry.js';
+import { rateLimit } from './_ratelimit.js';
 initSentry();
 
 const supabaseAdmin = createClient(
@@ -11,23 +12,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Rate limiting — 10 creaciones por IP por hora
-const _rl = new Map();
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const windowMs = 60 * 60 * 1000;
-  const entry = _rl.get(ip) || { count: 0, reset: now + windowMs };
-  if (now > entry.reset) { entry.count = 0; entry.reset = now + windowMs; }
-  entry.count++;
-  _rl.set(ip, entry);
-  if (_rl.size > 500) {
-    const old = now - windowMs;
-    for (const [k, v] of _rl) { if (v.reset < old) _rl.delete(k); }
-  }
-  return entry.count <= 10;
-}
-
-const ALLOWED_ORIGINS = ['https://alphadrivers.mx'];
+const ALLOWED_ORIGINS = ['https://www.alphadrivers.mx', 'https://alphadrivers.mx'];
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : 'null');
@@ -36,8 +21,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
-  if (!checkRateLimit(ip)) {
+  const ip = (req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!(await rateLimit(supabaseAdmin, 'create-auth-user:' + ip, 10, 60 * 60))) {
     return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta en una hora.' });
   }
 

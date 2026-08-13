@@ -703,6 +703,16 @@ const SB=supabase.createClient(
   if(role === 'admin'){
     document.querySelectorAll('.admin-only').forEach(el=>el.style.setProperty('display','flex','important'));
   }
+  // Cargar datos SOLO tras confirmar sesión + rol autorizado (RLS sigue siendo la autoridad)
+  loadAll().then(()=>{
+    applyRolePermissions(_AD_ROLE);
+    renderView('dashboard');
+    updateBenCount();
+  }).catch(err=>{
+    console.error('Error loading data:',err);
+    document.getElementById('pageTitle').textContent='Error de conexión';
+    document.getElementById('pageSub').textContent='No se pudo conectar con la base de datos. Verifica tu conexión.';
+  });
   // Forzar cambio de contraseña — leemos desde admin_users (no user_metadata, que es editable por el usuario)
   const {data:auRow}=await SB.from('admin_users').select('must_change_password').eq('auth_user_id',session.user.id).maybeSingle();
   if(auRow?.must_change_password){
@@ -2267,15 +2277,8 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
 // ── INIT ──────────────────────────────────────────────────────
-loadAll().then(()=>{
-  applyRolePermissions(_AD_ROLE);
-  renderView('dashboard');
-  updateBenCount();
-}).catch(err=>{
-  console.error('Error loading data:',err);
-  document.getElementById('pageTitle').textContent='Error de conexión';
-  document.getElementById('pageSub').textContent='No se pudo conectar con la base de datos. Verifica tu conexión.';
-});
+// loadAll() se dispara dentro del guard de sesión (arriba), solo tras
+// confirmar rol admin/concierge/staff — no antes.
 </script>
 </body>
 </html>

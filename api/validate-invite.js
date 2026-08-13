@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ALLOWED_ORIGINS = ['https://alphadrivers.mx'];
+const ALLOWED_ORIGINS = ['https://www.alphadrivers.mx', 'https://alphadrivers.mx'];
 
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const ip = (req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
   if (!(await rateLimit(supabaseAdmin, 'validate-invite:' + ip, 5, 15 * 60))) {
     return res.status(429).json({ valid: false, error: 'Demasiados intentos. Intenta en 15 minutos.' });
   }

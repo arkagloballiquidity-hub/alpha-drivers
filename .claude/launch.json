@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "alpha-drivers",
+      "name": "alpha-drivers-static",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["serve.py", "7788"],
-      "port": 7788
+      "runtimeArgs": ["-m", "http.server", "8931"],
+      "port": 8931
     }
   ]
 }
